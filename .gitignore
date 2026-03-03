@@ -6,6 +6,9 @@ __pycache__/
 # Logs
 *.log
 
+# User-local config (machine-specific, never commit)
+umeairt-user-config.json
+
 # Claude Code (keep CLAUDE.md and settings.json, ignore the rest)
 .claude/rules/
 .claude/plans/

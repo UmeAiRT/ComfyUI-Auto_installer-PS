@@ -19,7 +19,7 @@ Top-level keys:
 ```json
 {
   "vs_build_tools": {
-    "install_path": "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools",
+    "install_path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools",
     "url": "https://aka.ms/vs/17/release/vs_BuildTools.exe",
     "arguments": "--wait --quiet --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
   }

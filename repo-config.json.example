@@ -1,4 +1,8 @@
 {
+  "_deprecated": "repo-config.json is deprecated. Migrate to umeairt-user-config.json instead.",
+  "_migrate": "Copy scripts/umeairt-user-config.json.example to umeairt-user-config.json and set gh_user, gh_reponame, gh_branch there. umeairt-user-config.json also supports listen_address and listen_port.",
+  "_compat": "repo-config.json continues to work as a fallback but will be removed in a future release.",
+
   "gh_user": "your-username",
   "gh_reponame": "ComfyUI-Auto_installer",
   "gh_branch": "your-branch"
