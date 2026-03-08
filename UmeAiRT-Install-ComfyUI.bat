@@ -6,5 +6,58 @@ set "PYTHONNOUSERSITE=1"
 set "PYTHONUTF8=1"
 where pwsh >nul 2>&1 && set "PS_EXE=pwsh" || set "PS_EXE=powershell"
 title UmeAiRT ComfyUI Installer
-"%PS_EXE%" -ExecutionPolicy Bypass -File "%~dp0scripts\Install-ComfyUI.ps1" %*
+
+:: ============================================================================
+:: File: UmeAiRT-Install-ComfyUI.bat
+:: Description: Main entry point for the ComfyUI installation.
+::              Reads fork config, bootstraps all scripts, then launches
+::              Install-ComfyUI.ps1 which handles path selection and Phase 1.
+:: Author: UmeAiRT
+:: ============================================================================
+
+:: Default fork coordinates
+set "GH_USER=UmeAiRT"
+set "GH_REPO=ComfyUI-Auto_installer"
+set "GH_BRANCH=main"
+set "INSTALL_DIR=%~dp0"
+
+:: Override from config files if present (fork / branch testing)
+:: Priority: umeairt-user-config.json > repo-config.json (deprecated) > defaults
+set "CFG_FILE="
+if exist "%~dp0umeairt-user-config.json" set "CFG_FILE=umeairt-user-config.json"
+if not defined CFG_FILE if exist "%~dp0repo-config.json" set "CFG_FILE=repo-config.json"
+
+if defined CFG_FILE (
+    echo [INFO] Found %CFG_FILE% -- reading fork settings...
+    for /f "usebackq delims=" %%a in (`"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -Command "$c=Get-Content (Join-Path $env:INSTALL_DIR $env:CFG_FILE)|ConvertFrom-Json; if($c.gh_user){$c.gh_user}"`) do set "GH_USER=%%a"
+    for /f "usebackq delims=" %%a in (`"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -Command "$c=Get-Content (Join-Path $env:INSTALL_DIR $env:CFG_FILE)|ConvertFrom-Json; if($c.gh_reponame){$c.gh_reponame}"`) do set "GH_REPO=%%a"
+    for /f "usebackq delims=" %%a in (`"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -Command "$c=Get-Content (Join-Path $env:INSTALL_DIR $env:CFG_FILE)|ConvertFrom-Json; if($c.gh_branch){$c.gh_branch}"`) do set "GH_BRANCH=%%a"
+)
+
+echo [INFO] Using: %GH_USER%/%GH_REPO% @ %GH_BRANCH%
+
+:: Create scripts folder if needed
+if not exist "%~dp0scripts\" md "%~dp0scripts"
+
+:: Download Bootstrap-Downloader.ps1 fresh, then run it to pull all required scripts
+set "BOOTSTRAP_SCRIPT=%~dp0scripts\Bootstrap-Downloader.ps1"
+set "BOOTSTRAP_URL=https://github.com/%GH_USER%/%GH_REPO%/raw/%GH_BRANCH%/scripts/Bootstrap-Downloader.ps1"
+echo [INFO] Downloading bootstrap script...
+"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri $env:BOOTSTRAP_URL -OutFile $env:BOOTSTRAP_SCRIPT -UseBasicParsing -ErrorAction Stop"
+if errorlevel 1 (
+    echo [ERROR] Failed to download bootstrap script. Check your internet connection.
+    pause
+    exit /b 1
+)
+
+echo [INFO] Running bootstrap to download all required files...
+"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Bootstrap-Downloader.ps1" -InstallPath "%~dp0" -GhUser "%GH_USER%" -GhRepoName "%GH_REPO%" -GhBranch "%GH_BRANCH%"
+if errorlevel 1 (
+    echo [ERROR] Bootstrap failed. See above for details.
+    pause
+    exit /b 1
+)
+
+:: Launch Install-ComfyUI.ps1 — handles path selection, config persistence, and Phase 1
+"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Install-ComfyUI.ps1" %*
 if %errorlevel% neq 0 pause

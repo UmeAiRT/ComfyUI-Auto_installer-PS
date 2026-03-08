@@ -35,6 +35,7 @@ $baseUrl = "https://github.com/$GhUser/$GhRepoName/raw/$GhBranch/"
 # Define the list of files to download
 $filesToDownload = @(
     # PowerShell Scripts
+    @{ RepoPath = "scripts/Install-ComfyUI.ps1";         LocalPath = "scripts/Install-ComfyUI.ps1" },
     @{ RepoPath = "scripts/Install-ComfyUI-Phase1.ps1";  LocalPath = "scripts/Install-ComfyUI-Phase1.ps1" },
     @{ RepoPath = "scripts/Install-ComfyUI-Phase2.ps1";  LocalPath = "scripts/Install-ComfyUI-Phase2.ps1" },
     @{ RepoPath = "scripts/Update-ComfyUI.ps1";          LocalPath = "scripts/Update-ComfyUI.ps1" },
@@ -48,6 +49,7 @@ $filesToDownload = @(
     @{ RepoPath = "scripts/Download-LTX2-Models.ps1";    LocalPath = "scripts/Download-LTX2-Models.ps1" },
     @{ RepoPath = "scripts/Download-QWEN-Models.ps1";    LocalPath = "scripts/Download-QWEN-Models.ps1" },
     @{ RepoPath = "scripts/Download-Z-IMAGES-Models.ps1"; LocalPath = "scripts/Download-Z-IMAGES-Models.ps1" },
+    @{ RepoPath = "scripts/Download-Models.ps1";          LocalPath = "scripts/Download-Models.ps1" },
     @{ RepoPath = "scripts/UmeAiRTUtils.psm1";           LocalPath = "scripts/UmeAiRTUtils.psm1" },
     # Configuration Files
     @{ RepoPath = "scripts/environment.yml";             LocalPath = "scripts/environment.yml" },
