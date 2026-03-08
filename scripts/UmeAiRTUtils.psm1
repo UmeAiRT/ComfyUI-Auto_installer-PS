@@ -480,5 +480,53 @@ function Read-UserConfig {
     Write-Output "ConfigSource=$src"
 }
 
+function ConvertTo-ForwardSlash {
+    <#
+    .SYNOPSIS
+        Normalizes path separators to forward slashes.
+    .DESCRIPTION
+        Replaces the OS-native directory separator with the alternate separator.
+        On Windows: replaces \ with /.
+        On Linux/macOS: both separators are already /, so this is a no-op.
+        Accepts pipeline input for ergonomic chaining with Join-Path.
+    .PARAMETER Path
+        One or more path strings to normalize.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [string[]]$Path
+    )
+    process {
+        foreach ($p in $Path) {
+            $p.Replace(
+                [System.IO.Path]::DirectorySeparatorChar,
+                [System.IO.Path]::AltDirectorySeparatorChar
+            )
+        }
+    }
+}
+
+function Resolve-CleanPath {
+    <#
+    .SYNOPSIS
+        Trims trailing slashes and normalizes to forward slashes.
+    .DESCRIPTION
+        Combines TrimEnd of both separator types with ConvertTo-ForwardSlash.
+        Use at every point where a path arrives from user input, CLI params,
+        or environment variables to ensure a consistent internal representation.
+    .PARAMETER Path
+        Path string to clean.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [string]$Path
+    )
+    process {
+        ConvertTo-ForwardSlash ($Path.TrimEnd('\', '/'))
+    }
+}
+
 # --- END OF FILE ---
-Export-ModuleMember -Function Write-Log, Invoke-AndLog, Save-File, Confirm-FileHash, Confirm-Authenticode, Set-ManagerUseUv, Test-NvidiaGpu, Read-UserChoice, Get-GpuVramInfo, Test-PyVersion, Read-UserConfig
+Export-ModuleMember -Function Write-Log, Invoke-AndLog, Save-File, Confirm-FileHash, Confirm-Authenticode, Set-ManagerUseUv, Test-NvidiaGpu, Read-UserChoice, Get-GpuVramInfo, Test-PyVersion, Read-UserConfig, ConvertTo-ForwardSlash, Resolve-CleanPath

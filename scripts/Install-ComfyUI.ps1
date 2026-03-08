@@ -72,7 +72,10 @@ if (Test-Path $psm1Path) {
     Import-Module $psm1Path -Force
     $cfgLines = Read-UserConfig -UserConfigFile $userConfigFile -RepoConfigFile $repoConfigFile
     $cfg = @{}
-    $cfgLines | ForEach-Object { $k, $v = $_ -split '=', 2; $cfg[$k] = $v }
+    $cfgLines | ForEach-Object {
+        $parts = $_ -split '=', 2
+        if ($parts.Count -eq 2) { $cfg[$parts[0].Trim()] = $parts[1].Trim() }
+    }
     # CLI params (explicitly passed) override config file values
     if (-not $PSBoundParameters.ContainsKey('GhUser'))     { $GhUser     = $cfg.GhUser }
     if (-not $PSBoundParameters.ContainsKey('GhRepoName')) { $GhRepoName = $cfg.GhRepoName }
