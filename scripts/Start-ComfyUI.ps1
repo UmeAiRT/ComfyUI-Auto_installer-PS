@@ -23,7 +23,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 # Trim any trailing path separator passed by %~dp0
-$InstallPath = $InstallPath.TrimEnd('\', '/')
+$InstallPath = $InstallPath.TrimEnd('\', '/').Replace('\', '/')
 
 # ============================================================================
 # Helpers
@@ -45,25 +45,25 @@ $env:PYTHONUTF8       = '1'
 # ============================================================================
 Write-Info 'Checking installation type...'
 
-$installTypeFile = Join-Path $InstallPath 'scripts\install_type'
+$installTypeFile = "$InstallPath/scripts/install_type"
 $installType     = 'conda'
 
 if (Test-Path $installTypeFile) {
     $installType = (Get-Content $installTypeFile -Raw).Trim()
-} elseif (Test-Path (Join-Path $InstallPath 'scripts\venv')) {
+} elseif (Test-Path "$InstallPath/scripts/venv") {
     $installType = 'venv'
 }
 
 if ($installType -eq 'venv') {
     Write-Info 'Activating venv environment...'
-    $activateScript = Join-Path $InstallPath 'scripts\venv\Scripts\Activate.ps1'
+    $activateScript = "$InstallPath/scripts/venv/Scripts/Activate.ps1"
     if (-not (Test-Path $activateScript)) {
         Abort "venv activate script not found: $activateScript"
     }
     . $activateScript
 } else {
     Write-Info 'Activating Conda environment...'
-    $condaHook = Join-Path $env:LOCALAPPDATA 'Miniconda3\shell\condabin\conda-hook.ps1'
+    $condaHook = "$($env:LOCALAPPDATA.Replace('\','/'))/Miniconda3/shell/condabin/conda-hook.ps1"
     if (-not (Test-Path $condaHook)) {
         Abort "Conda hook not found at: $condaHook`nEnsure Miniconda3 is installed under %LOCALAPPDATA%."
     }
@@ -77,7 +77,7 @@ if ($installType -eq 'venv') {
 # ============================================================================
 # Section 3: Read umeairt-user-config.json
 # ============================================================================
-$configPath = Join-Path $InstallPath 'umeairt-user-config.json'
+$configPath = "$InstallPath/umeairt-user-config.json"
 $config     = $null
 
 if (Test-Path $configPath) {
@@ -201,7 +201,7 @@ if ($LowVRAM) {
 $mode = if ($LowVRAM) { 'Low VRAM / Stability Mode' } else { 'Performance Mode' }
 Write-Info "Starting ComfyUI ($mode)..."
 
-$comfyDir = Join-Path $InstallPath 'ComfyUI'
+$comfyDir = "$InstallPath/ComfyUI"
 if (-not (Test-Path $comfyDir)) {
     Abort "ComfyUI directory not found: $comfyDir`nHas ComfyUI been installed? Run UmeAiRT-Install-ComfyUI.bat first."
 }

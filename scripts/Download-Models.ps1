@@ -1,8 +1,8 @@
 param(
-    [string]$InstallPath = (Split-Path $PSScriptRoot -Parent)
+    [string]$InstallPath = ((Split-Path $PSScriptRoot -Parent).Replace('\', '/'))
 )
 
-$scriptsDir = $PSScriptRoot
+$scriptsDir = $PSScriptRoot.Replace('\', '/')
 
 $scriptMap = @{
     '1' = 'Download-FLUX-Models.ps1'
@@ -40,7 +40,7 @@ while ($true) {
     if ($choice -eq 'Q') { break }
 
     if ($scriptMap.ContainsKey($choice)) {
-        $target = Join-Path $scriptsDir $scriptMap[$choice]
+        $target = "$scriptsDir/$($scriptMap[$choice])"
         if (Test-Path $target) {
             & $target -InstallPath $InstallPath
         } else {

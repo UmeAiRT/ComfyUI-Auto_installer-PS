@@ -25,6 +25,9 @@ param(
     [switch]$SkipSelf = $false
 )
 
+# Inline path helper — UmeAiRTUtils.psm1 is not yet available during bootstrap
+function ConvertTo-ForwardSlash { param([string]$Path) $Path.Replace('\', '/') }
+
 # ============================================================================
 # SCRIPT INITIALIZATION
 # ============================================================================
@@ -70,7 +73,7 @@ Write-Host "[INFO] Downloading the latest versions of the installation scripts..
 
 foreach ($file in $filesToDownload) {
     $uri = $baseUrl + $file.RepoPath
-    $outFile = Join-Path $InstallPath $file.LocalPath
+    $outFile = ConvertTo-ForwardSlash (Join-Path $InstallPath $file.LocalPath)
 
     if ($SkipSelf -and $file.LocalPath -eq "UmeAiRT-Update-ComfyUI.bat") {
         Write-Host "  - Skipping 'UmeAiRT-Update-ComfyUI.bat' (SkipSelf)"
@@ -78,7 +81,7 @@ foreach ($file in $filesToDownload) {
     }
 
     # Ensure the destination directory exists before downloading
-    $outDir = Split-Path -Path $outFile -Parent
+    $outDir = ConvertTo-ForwardSlash (Split-Path -Path $outFile -Parent)
     if (-not (Test-Path $outDir)) {
         New-Item -ItemType Directory -Path $outDir -Force | Out-Null
     }

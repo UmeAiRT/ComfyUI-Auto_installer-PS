@@ -15,14 +15,14 @@ param(
 # ============================================================================
 # INITIALIZATION
 # ============================================================================
-$InstallPath = $InstallPath.Trim('"')
-Import-Module (Join-Path $PSScriptRoot "UmeAiRTUtils.psm1") -Force
+$InstallPath = $InstallPath.Trim('"').TrimEnd('\', '/').Replace('\', '/')
+Import-Module "$($PSScriptRoot.Replace('\','/'))/UmeAiRTUtils.psm1" -Force
 
 # ============================================================================
 # MAIN EXECUTION
 # ============================================================================
 
-$modelsPath = Join-Path $InstallPath "models"
+$modelsPath = "$InstallPath/models"
 if (-not (Test-Path $modelsPath)) {
     Write-Log "Models directory does not exist, creating it..." -Color Yellow
     New-Item -Path $modelsPath -ItemType Directory -Force | Out-Null
@@ -62,31 +62,31 @@ $ggufChoice = Read-UserChoice -Prompt "Do you want to download HiDream GGUF mode
 Write-Log "Starting HiDream model downloads..." -Color Cyan
 
 $baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/models"
-$hidreamDiffDir = Join-Path $modelsPath "diffusion_models\HiDream"
-$hidreamUnetDir = Join-Path $modelsPath "unet\HiDream"
+$hidreamDiffDir = "$modelsPath/diffusion_models/HiDream"
+$hidreamUnetDir = "$modelsPath/unet/HiDream"
 
 New-Item -Path $hidreamDiffDir, $hidreamUnetDir -ItemType Directory -Force | Out-Null
 
 if ($baseChoice -ne 'D') {
     Write-Log "Downloading HiDream base models..."
     if ($baseChoice -in 'A', 'C') {
-        Save-File -Uri "$baseUrl/diffusion_models/HiDream/hidream_i1_dev_fp16.safetensors" -OutFile (Join-Path $hidreamDiffDir "hidream_i1_dev_fp16.safetensors")
+        Save-File -Uri "$baseUrl/diffusion_models/HiDream/hidream_i1_dev_fp16.safetensors" -OutFile "$hidreamDiffDir/hidream_i1_dev_fp16.safetensors"
     }
     if ($baseChoice -in 'B', 'C') {
-        Save-File -Uri "$baseUrl/diffusion_models/HiDream/hidream_i1_dev_fp8.safetensors" -OutFile (Join-Path $hidreamDiffDir "hidream_i1_dev_fp8.safetensors")
+        Save-File -Uri "$baseUrl/diffusion_models/HiDream/hidream_i1_dev_fp8.safetensors" -OutFile "$hidreamDiffDir/hidream_i1_dev_fp8.safetensors"
     }
 }
 
 if ($ggufChoice -ne 'E') {
     Write-Log "Downloading HiDream GGUF models..."
     if ($ggufChoice -in 'A', 'D') {
-        Save-File -Uri "$baseUrl/unet/HiDream/hidream-i1-dev-Q8_0.gguf" -OutFile (Join-Path $hidreamUnetDir "hidream-i1-dev-Q8_0.gguf")
+        Save-File -Uri "$baseUrl/unet/HiDream/hidream-i1-dev-Q8_0.gguf" -OutFile "$hidreamUnetDir/hidream-i1-dev-Q8_0.gguf"
     }
     if ($ggufChoice -in 'B', 'D') {
-        Save-File -Uri "$baseUrl/unet/HiDream/hidream-i1-dev-Q5_K_S.gguf" -OutFile (Join-Path $hidreamUnetDir "hidream-i1-dev-Q5_K_S.gguf")
+        Save-File -Uri "$baseUrl/unet/HiDream/hidream-i1-dev-Q5_K_S.gguf" -OutFile "$hidreamUnetDir/hidream-i1-dev-Q5_K_S.gguf"
     }
     if ($ggufChoice -in 'C', 'D') {
-        Save-File -Uri "$baseUrl/unet/HiDream/hidream-i1-dev-Q4_K_S.gguf" -OutFile (Join-Path $hidreamUnetDir "hidream-i1-dev-Q4_K_S.gguf")
+        Save-File -Uri "$baseUrl/unet/HiDream/hidream-i1-dev-Q4_K_S.gguf" -OutFile "$hidreamUnetDir/hidream-i1-dev-Q4_K_S.gguf"
     }
 }
 

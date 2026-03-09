@@ -15,7 +15,7 @@
 #>
 
 param(
-    [string]$InstallPath  = (Split-Path -Path $PSScriptRoot -Parent),
+    [string]$InstallPath  = ((Split-Path -Path $PSScriptRoot -Parent).Replace('\', '/')),
     [string]$SnapshotPath = "",
     [string]$GhUser       = "",   # empty = read from config
     [string]$GhRepoName   = "",
@@ -32,17 +32,17 @@ param(
 $env:PYTHONUTF8 = "1"
 
 # --- Paths and Configuration ---
-$comfyPath = Join-Path $InstallPath "ComfyUI"
+$comfyPath = "$InstallPath/ComfyUI"
 # Target internal folder (Junctions handle the redirection to external storage)
-$internalCustomNodesPath = Join-Path $comfyPath "custom_nodes"
-$workflowPath = Join-Path $InstallPath "user\default\workflows\UmeAiRT-Workflow"
-$condaPath = Join-Path $env:LOCALAPPDATA "Miniconda3"
-$logPath = Join-Path $InstallPath "logs"
-$logFile = Join-Path $logPath "update_log.txt"
-$scriptPath = Join-Path $InstallPath "scripts"
+$internalCustomNodesPath = "$comfyPath/custom_nodes"
+$workflowPath = "$InstallPath/user/default/workflows/UmeAiRT-Workflow"
+$condaPath = "$($env:LOCALAPPDATA.Replace('\','/'))/Miniconda3"
+$logPath = "$InstallPath/logs"
+$logFile = "$logPath/update_log.txt"
+$scriptPath = "$InstallPath/scripts"
 
 # --- Load Dependencies from JSON ---
-$dependenciesFile = Join-Path $scriptPath "dependencies.json"
+$dependenciesFile = "$scriptPath/dependencies.json"
 if (-not (Test-Path $dependenciesFile)) {
     Write-Host "FATAL: dependencies.json not found at '$dependenciesFile'. Cannot proceed." -ForegroundColor Red
     Read-Host "Press Enter to exit."
@@ -53,7 +53,7 @@ $dependencies = Get-Content -Raw -Path $dependenciesFile | ConvertFrom-Json
 if (-not (Test-Path $logPath)) { New-Item -ItemType Directory -Force -Path $logPath | Out-Null }
 
 # --- Helper Functions ---
-Import-Module (Join-Path $PSScriptRoot "UmeAiRTUtils.psm1") -Force
+Import-Module "$($PSScriptRoot.Replace('\','/'))/UmeAiRTUtils.psm1" -Force
 $global:logFile = $logFile
 $global:totalSteps = 4
 $global:currentStep = 0
@@ -61,16 +61,19 @@ $global:currentStep = 0
 # --- Resolve fork config: CLI args take precedence over config file ---
 if (-not $GhUser) {
     $cfgLines = Read-UserConfig `
-        -UserConfigFile (Join-Path $InstallPath 'umeairt-user-config.json') `
-        -RepoConfigFile (Join-Path $InstallPath 'repo-config.json')
+        -UserConfigFile "$InstallPath/umeairt-user-config.json" `
+        -RepoConfigFile "$InstallPath/repo-config.json"
     $cfg = @{}
-    $cfgLines | ForEach-Object { $k, $v = $_ -split '=', 2; $cfg[$k] = $v }
+    $cfgLines | ForEach-Object {
+        $parts = $_ -split '=', 2
+        if ($parts.Count -eq 2) { $cfg[$parts[0].Trim()] = $parts[1].Trim() }
+    }
     $GhUser = $cfg.GhUser; $GhRepoName = $cfg.GhRepoName; $GhBranch = $cfg.GhBranch
 }
 
 # --- Bootstrap self-update ---
 $bootstrapUrl    = "https://github.com/$GhUser/$GhRepoName/raw/$GhBranch/scripts/Bootstrap-Downloader.ps1"
-$bootstrapScript = Join-Path $PSScriptRoot 'Bootstrap-Downloader.ps1'
+$bootstrapScript = "$($PSScriptRoot.Replace('\','/'))/Bootstrap-Downloader.ps1"
 Write-Host "[INFO] Updating bootstrap and all scripts ($GhUser/$GhRepoName @ $GhBranch)..." -ForegroundColor Cyan
 try {
     Invoke-WebRequest -Uri $bootstrapUrl -OutFile $bootstrapScript -UseBasicParsing -ErrorAction Stop
@@ -84,21 +87,21 @@ try {
 #===========================================================================
 # SECTION 1.5: ENVIRONMENT DETECTION
 #===========================================================================
-$installTypeFile = Join-Path $scriptPath "install_type"
+$installTypeFile = "$scriptPath/install_type"
 $pythonExe = "python" # Default fallback
 
 if (Test-Path $installTypeFile) {
     $installType = Get-Content -Path $installTypeFile -Raw
     $installType = $installType.Trim()
-    
+
     if ($installType -eq "venv") {
-        $venvPython = Join-Path $scriptPath "venv\Scripts\python.exe"
+        $venvPython = "$scriptPath/venv/Scripts/python.exe"
         if (Test-Path $venvPython) {
             $pythonExe = $venvPython
             Write-Host "[INIT] Detected VENV installation. Using: $pythonExe" -ForegroundColor Cyan
         }
     } elseif ($installType -eq "conda") {
-        $condaEnvPython = Join-Path $env:LOCALAPPDATA "Miniconda3\envs\UmeAiRT\python.exe"
+        $condaEnvPython = "$($env:LOCALAPPDATA.Replace('\','/'))/Miniconda3/envs/UmeAiRT/python.exe"
         if (Test-Path $condaEnvPython) {
             $pythonExe = $condaEnvPython
             Write-Host "[INIT] Detected CONDA installation. Using: $pythonExe" -ForegroundColor Cyan
@@ -122,14 +125,14 @@ Write-Log "Updating Core Git repositories..." -Level 0 -Color Green
 Write-Log "Updating ComfyUI Core..." -Level 1
 Invoke-AndLog "git" "-C `"$comfyPath`" pull"
 Write-Log "Checking main ComfyUI requirements..." -Level 1
-$mainReqs = Join-Path $comfyPath "requirements.txt"
+$mainReqs = "$comfyPath/requirements.txt"
 Invoke-AndLog "uv" "pip install --python `"$pythonExe`" -r `"$mainReqs`""
 
 # --- 2. Update and Install Custom Nodes (Manager CLI) ---
 Write-Log "Updating/Installing Custom Nodes..." -Level 0 -Color Green
 
 # --- A. Update ComfyUI-Manager FIRST ---
-$managerPath = Join-Path $internalCustomNodesPath "ComfyUI-Manager"
+$managerPath = "$internalCustomNodesPath/ComfyUI-Manager"
 Write-Log "Updating ComfyUI-Manager..." -Level 1
 if (Test-Path $managerPath) {
     Invoke-AndLog "git" "-C `"$managerPath`" pull"
@@ -139,7 +142,7 @@ if (Test-Path $managerPath) {
 }
 
 # --- B. Update Manager Dependencies (Critical for CLI) ---
-$managerReqs = Join-Path $managerPath "requirements.txt"
+$managerReqs = "$managerPath/requirements.txt"
 if (Test-Path $managerReqs) {
     Write-Log "Updating ComfyUI-Manager dependencies..." -Level 1
     Invoke-AndLog "uv" "pip install --python `"$pythonExe`" -r `"$managerReqs`""
@@ -148,7 +151,7 @@ if (Test-Path $managerReqs) {
 # --- C. Enable uv in ComfyUI Manager config ---
 Set-ManagerUseUv -InstallPath $InstallPath
 
-$cmCliScript = Join-Path $managerPath "cm-cli.py"
+$cmCliScript = "$managerPath/cm-cli.py"
 
 # --- D. Setup Environment Variables for CLI ---
 # This matches the logic in Phase 2 to prevent "ModuleNotFoundError"
@@ -156,8 +159,8 @@ $env:PYTHONPATH = "$comfyPath;$managerPath;$env:PYTHONPATH"
 $env:COMFYUI_PATH = $comfyPath
 
 # --- E. Snapshot Resolution ---
-$userSnapshotFile      = Join-Path $scriptPath "user-snapshot.json"
-$upstreamSnapshotFile  = Join-Path $scriptPath "snapshot.json"
+$userSnapshotFile      = "$scriptPath/user-snapshot.json"
+$upstreamSnapshotFile  = "$scriptPath/snapshot.json"
 $effectiveSnapshotFile = $null
 $snapshotSource        = ""
 
@@ -173,7 +176,7 @@ if ($SnapshotPath -and $SnapshotPath.Trim() -ne "") {
 
 # Priority 2: snapshot_path in umeairt-user-config.json
 if ($null -eq $effectiveSnapshotFile) {
-    $userConfigPath = Join-Path $InstallPath "umeairt-user-config.json"
+    $userConfigPath = "$InstallPath/umeairt-user-config.json"
     if (Test-Path $userConfigPath) {
         try {
             $uc = Get-Content $userConfigPath -Raw | ConvertFrom-Json
@@ -262,7 +265,7 @@ try {
 # --- 3. Update Optimized Components (Triton/SageAttention) ---
 Write-Log "Updating Optimized Components (Triton/SageAttention)..." -Level 0 -Color Green
 $installerInfo = $dependencies.files.installer_script
-$installerDest = Join-Path $InstallPath $installerInfo.destination
+$installerDest = "$InstallPath/$($installerInfo.destination.Replace('\','/'))"
 
 try {
     # Always download fresh to get latest logic

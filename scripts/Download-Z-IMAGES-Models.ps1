@@ -16,14 +16,14 @@ param(
 # ============================================================================
 # INITIALIZATION
 # ============================================================================
-$InstallPath = $InstallPath.Trim('"')
-Import-Module (Join-Path $PSScriptRoot "UmeAiRTUtils.psm1") -Force
+$InstallPath = $InstallPath.Trim('"').TrimEnd('\', '/').Replace('\', '/')
+Import-Module "$($PSScriptRoot.Replace('\','/'))/UmeAiRTUtils.psm1" -Force
 
 # ============================================================================
 # MAIN EXECUTION
 # ============================================================================
 
-$modelsPath = Join-Path $InstallPath "models"
+$modelsPath = "$InstallPath/models"
 if (-not (Test-Path $modelsPath)) {
     Write-Log "Could not find ComfyUI models path at '$modelsPath'. Exiting." -Color Red
     Read-Host "Press Enter to exit."
@@ -82,11 +82,11 @@ Write-Log "Starting Z-IMAGE Turbo model downloads..." -Color Cyan
 $baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/models"
 $esrganUrl = "https://huggingface.co/spaces/Marne/Real-ESRGAN/resolve/main"
 
-$ZImgUnetDir = Join-Path $modelsPath "unet\Z-IMG"
-$ZImgDiffDir = Join-Path $modelsPath "diffusion_models\Z-IMG"
-$clipDir = Join-Path $modelsPath "clip"
-$vaeDir = Join-Path $modelsPath "vae"
-$upscaleDir = Join-Path $modelsPath "upscale_models"
+$ZImgUnetDir = "$modelsPath/unet/Z-IMG"
+$ZImgDiffDir = "$modelsPath/diffusion_models/Z-IMG"
+$clipDir = "$modelsPath/clip"
+$vaeDir = "$modelsPath/vae"
+$upscaleDir = "$modelsPath/upscale_models"
 
 New-Item -Path $ZImgUnetDir, $ZImgDiffDir, $clipDir, $vaeDir, $upscaleDir -ItemType Directory -Force | Out-Null
 
@@ -95,14 +95,14 @@ $doDownload = ($baseChoice -eq 'A' -or $ggufChoice -ne 'G')
 
 if ($doDownload) {
     Write-Log "Downloading common support files (VAE)..."
-    Save-File -Uri "$baseUrl/vae/ae.safetensors" -OutFile (Join-Path $vaeDir "ae.safetensors")
+    Save-File -Uri "$baseUrl/vae/ae.safetensors" -OutFile "$vaeDir/ae.safetensors"
 }
 
 # --- Download BF16 Base Model ---
 if ($baseChoice -eq 'A') {
     Write-Log "Downloading Z-IMAGE Turbo BF16 Base Model..."
-    Save-File -Uri "$baseUrl/diffusion_models/Z-IMG/z_image_turbo_bf16.safetensors" -OutFile (Join-Path $ZImgDiffDir "z_image_turbo_bf16.safetensors")
-    Save-File -Uri "$baseUrl/clip/qwen_3_4b.safetensors" -OutFile (Join-Path $clipDir "qwen_3_4b.safetensors")
+    Save-File -Uri "$baseUrl/diffusion_models/Z-IMG/z_image_turbo_bf16.safetensors" -OutFile "$ZImgDiffDir/z_image_turbo_bf16.safetensors"
+    Save-File -Uri "$baseUrl/clip/qwen_3_4b.safetensors" -OutFile "$clipDir/qwen_3_4b.safetensors"
 }
 
 # --- Download GGUF Models ---
@@ -112,44 +112,44 @@ if ($ggufChoice -ne 'G') {
     # Option A: Q8 (High Quality) -> CLIP Q8
     if ($ggufChoice -in 'A', 'F') {
         Write-Log "Downloading Q8_0 Set (UNet + CLIP)..."
-        Save-File -Uri "$baseUrl/unet/Z-IMG/z_image_turbo-Q8_0.gguf" -OutFile (Join-Path $ZImgUnetDir "z_image_turbo-Q8_0.gguf")
-        Save-File -Uri "$baseUrl/clip/Qwen3-4B-UD-Q8_K_XL.gguf" -OutFile (Join-Path $clipDir "Qwen3-4B-UD-Q8_K_XL.gguf")
+        Save-File -Uri "$baseUrl/unet/Z-IMG/z_image_turbo-Q8_0.gguf" -OutFile "$ZImgUnetDir/z_image_turbo-Q8_0.gguf"
+        Save-File -Uri "$baseUrl/clip/Qwen3-4B-UD-Q8_K_XL.gguf" -OutFile "$clipDir/Qwen3-4B-UD-Q8_K_XL.gguf"
     }
 
     # Option B: Q6 (Good Quality) -> CLIP Q6
     if ($ggufChoice -in 'B', 'F') {
         Write-Log "Downloading Q6_K Set (UNet + CLIP)..."
-        Save-File -Uri "$baseUrl/unet/Z-IMG/z_image_turbo-Q6_K.gguf" -OutFile (Join-Path $ZImgUnetDir "z_image_turbo-Q6_K.gguf")
-        Save-File -Uri "$baseUrl/clip/Qwen3-4B-UD-Q6_K_XL.gguf" -OutFile (Join-Path $clipDir "Qwen3-4B-UD-Q6_K_XL.gguf")
+        Save-File -Uri "$baseUrl/unet/Z-IMG/z_image_turbo-Q6_K.gguf" -OutFile "$ZImgUnetDir/z_image_turbo-Q6_K.gguf"
+        Save-File -Uri "$baseUrl/clip/Qwen3-4B-UD-Q6_K_XL.gguf" -OutFile "$clipDir/Qwen3-4B-UD-Q6_K_XL.gguf"
     }
 
     # Option C: Q5 (Balanced) -> CLIP Q5
     if ($ggufChoice -in 'C', 'F') {
         Write-Log "Downloading Q5_K Set (UNet + CLIP)..."
-        Save-File -Uri "$baseUrl/unet/Z-IMG/z_image_turbo-Q5_K_S.gguf" -OutFile (Join-Path $ZImgUnetDir "z_image_turbo-Q5_K_S.gguf")
-        Save-File -Uri "$baseUrl/clip/Qwen3-4B-UD-Q5_K_XL.gguf" -OutFile (Join-Path $clipDir "Qwen3-4B-UD-Q5_K_XL.gguf")
+        Save-File -Uri "$baseUrl/unet/Z-IMG/z_image_turbo-Q5_K_S.gguf" -OutFile "$ZImgUnetDir/z_image_turbo-Q5_K_S.gguf"
+        Save-File -Uri "$baseUrl/clip/Qwen3-4B-UD-Q5_K_XL.gguf" -OutFile "$clipDir/Qwen3-4B-UD-Q5_K_XL.gguf"
     }
 
     # Option D: Q4 (Fast) -> CLIP Q4
     if ($ggufChoice -in 'D', 'F') {
         Write-Log "Downloading Q4_K Set (UNet + CLIP)..."
-        Save-File -Uri "$baseUrl/unet/Z-IMG/z_image_turbo-Q4_K_S.gguf" -OutFile (Join-Path $ZImgUnetDir "z_image_turbo-Q4_K_S.gguf")
-        Save-File -Uri "$baseUrl/clip/Qwen3-4B-UD-Q4_K_XL.gguf" -OutFile (Join-Path $clipDir "Qwen3-4B-UD-Q4_K_XL.gguf")
+        Save-File -Uri "$baseUrl/unet/Z-IMG/z_image_turbo-Q4_K_S.gguf" -OutFile "$ZImgUnetDir/z_image_turbo-Q4_K_S.gguf"
+        Save-File -Uri "$baseUrl/clip/Qwen3-4B-UD-Q4_K_XL.gguf" -OutFile "$clipDir/Qwen3-4B-UD-Q4_K_XL.gguf"
     }
 
     # Option E: Q3 (Low VRAM) -> CLIP Q3
     if ($ggufChoice -in 'E', 'F') {
         Write-Log "Downloading Q3_K Set (UNet + CLIP)..."
-        Save-File -Uri "$baseUrl/unet/Z-IMG/z_image_turbo-Q3_K_S.gguf" -OutFile (Join-Path $ZImgUnetDir "z_image_turbo-Q3_K_S.gguf")
-        Save-File -Uri "$baseUrl/clip/Qwen3-4B-UD-Q3_K_XL.gguf" -OutFile (Join-Path $clipDir "Qwen3-4B-UD-Q3_K_XL.gguf")
+        Save-File -Uri "$baseUrl/unet/Z-IMG/z_image_turbo-Q3_K_S.gguf" -OutFile "$ZImgUnetDir/z_image_turbo-Q3_K_S.gguf"
+        Save-File -Uri "$baseUrl/clip/Qwen3-4B-UD-Q3_K_XL.gguf" -OutFile "$clipDir/Qwen3-4B-UD-Q3_K_XL.gguf"
     }
 }
 
 # --- Download Upscalers ---
 if ($upscalerChoice -eq 'A') {
     Write-Log "Downloading RealESRGAN Upscalers..."
-    Save-File -Uri "$esrganUrl/RealESRGAN_x4plus.pth" -OutFile (Join-Path $upscaleDir "RealESRGAN_x4plus.pth")
-    Save-File -Uri "$esrganUrl/RealESRGAN_x4plus_anime_6B.pth" -OutFile (Join-Path $upscaleDir "RealESRGAN_x4plus_anime_6B.pth")
+    Save-File -Uri "$esrganUrl/RealESRGAN_x4plus.pth" -OutFile "$upscaleDir/RealESRGAN_x4plus.pth"
+    Save-File -Uri "$esrganUrl/RealESRGAN_x4plus_anime_6B.pth" -OutFile "$upscaleDir/RealESRGAN_x4plus_anime_6B.pth"
 }
 
 Write-Log "Z-IMAGE Turbo model downloads complete." -Color Green

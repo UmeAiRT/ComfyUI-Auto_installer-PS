@@ -15,14 +15,14 @@ param(
 # ============================================================================
 # INITIALIZATION
 # ============================================================================
-$InstallPath = $InstallPath.Trim('"')
-Import-Module (Join-Path $PSScriptRoot "UmeAiRTUtils.psm1") -Force
+$InstallPath = $InstallPath.Trim('"').TrimEnd('\', '/').Replace('\', '/')
+Import-Module "$($PSScriptRoot.Replace('\','/'))/UmeAiRTUtils.psm1" -Force
 
 # ============================================================================
 # MAIN EXECUTION
 # ============================================================================
 
-$modelsPath = Join-Path $InstallPath "models"
+$modelsPath = "$InstallPath/models"
 if (-not (Test-Path $modelsPath)) {
     Write-Log "Models directory does not exist, creating it..." -Color Yellow
     New-Item -Path $modelsPath -ItemType Directory -Force | Out-Null
@@ -56,13 +56,13 @@ $ggufChoice = Read-UserChoice -Prompt "Do you want to download LTXV GGUF models?
 Write-Log "Starting LTX-2 model downloads..." -Color Cyan
 
 $baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/models"
-$ltxvChkptDir = Join-Path $modelsPath "checkpoints\LTX2"
-$difftDir = Join-Path $modelsPath "diffusion_models"
-$ltxvUnetDir = Join-Path $modelsPath "unet\LTX2"
-$vaeDir = Join-Path $modelsPath "vae"
-$upscaleDir = Join-Path $modelsPath "latent_upscale_models"
-$lorasDir = Join-Path $modelsPath "loras"
-$clipDir = Join-Path $modelsPath "clip"
+$ltxvChkptDir = "$modelsPath/checkpoints/LTX2"
+$difftDir = "$modelsPath/diffusion_models"
+$ltxvUnetDir = "$modelsPath/unet/LTX2"
+$vaeDir = "$modelsPath/vae"
+$upscaleDir = "$modelsPath/latent_upscale_models"
+$lorasDir = "$modelsPath/loras"
+$clipDir = "$modelsPath/clip"
 
 New-Item -Path $ltxvChkptDir, $ltxvUnetDir, $vaeDir, $upscaleDir -ItemType Directory -Force | Out-Null
 
@@ -71,34 +71,34 @@ $doDownload = ($ggufChoice -ne 'E')
 
 if ($doDownload) {
     Write-Log "Downloading LTX2 VAE..."
-    Save-File -Uri "$baseUrl/vae/LTX2_video_vae_bf16.safetensors" -OutFile (Join-Path $vaeDir "LTX2_video_vae_bf16.safetensors")
-    Save-File -Uri "$baseUrl/vae/LTX2_audio_vae_bf16.safetensors" -OutFile (Join-Path $vaeDir "LTX2_audio_vae_bf16.safetensors")
+    Save-File -Uri "$baseUrl/vae/LTX2_video_vae_bf16.safetensors" -OutFile "$vaeDir/LTX2_video_vae_bf16.safetensors"
+    Save-File -Uri "$baseUrl/vae/LTX2_audio_vae_bf16.safetensors" -OutFile "$vaeDir/LTX2_audio_vae_bf16.safetensors"
 
     Write-Log "Downloading LTX2 text encoder..."
-    Save-File -Uri "$baseUrl/clip/ltx-2-19b-embeddings_connector_dev_bf16.safetensors" -OutFile (Join-Path $clipDir "ltx-2-19b-embeddings_connector_dev_bf16.safetensors")
-    Save-File -Uri "$baseUrl/clip/gemma-3-12b-it-IQ4_XS.gguf" -OutFile (Join-Path $clipDir "gemma-3-12b-it-IQ4_XS.gguf")
+    Save-File -Uri "$baseUrl/clip/ltx-2-19b-embeddings_connector_dev_bf16.safetensors" -OutFile "$clipDir/ltx-2-19b-embeddings_connector_dev_bf16.safetensors"
+    Save-File -Uri "$baseUrl/clip/gemma-3-12b-it-IQ4_XS.gguf" -OutFile "$clipDir/gemma-3-12b-it-IQ4_XS.gguf"
 
     Write-Log "Downloading MelBandRoformer..."
-    Save-File -Uri "$baseUrl/diffusion_models/MelBandRoFormer/MelBandRoformer_fp32.safetensors" -OutFile (Join-Path $difftDir "MelBandRoformer_fp32.safetensors")
+    Save-File -Uri "$baseUrl/diffusion_models/MelBandRoFormer/MelBandRoformer_fp32.safetensors" -OutFile "$difftDir/MelBandRoformer_fp32.safetensors"
 	
     Write-Log "Downloading LTX2 spatial upscaler..."
-    Save-File -Uri "$baseUrl/latent_upscale_models/ltx-2-spatial-upscaler-x2-1.0.safetensors" -OutFile (Join-Path $upscaleDir "ltx-2-spatial-upscaler-x2-1.0.safetensors")
+    Save-File -Uri "$baseUrl/latent_upscale_models/ltx-2-spatial-upscaler-x2-1.0.safetensors" -OutFile "$upscaleDir/ltx-2-spatial-upscaler-x2-1.0.safetensors"
 
     Write-Log "Downloading recommended LoRA..."
-    Save-File -Uri "$baseUrl/loras/LTX-2/ltx-2-19b-distilled-lora-384.safetensors" -OutFile (Join-Path $lorasDir "ltx-2-19b-distilled-lora-384.safetensors")
-    Save-File -Uri "$baseUrl/loras/LTX-2/ltx-2-19b-ic-lora-detailer.safetensors" -OutFile (Join-Path $lorasDir "ltx-2-19b-ic-lora-detailer.safetensors")
+    Save-File -Uri "$baseUrl/loras/LTX-2/ltx-2-19b-distilled-lora-384.safetensors" -OutFile "$lorasDir/ltx-2-19b-distilled-lora-384.safetensors"
+    Save-File -Uri "$baseUrl/loras/LTX-2/ltx-2-19b-ic-lora-detailer.safetensors" -OutFile "$lorasDir/ltx-2-19b-ic-lora-detailer.safetensors"
 }
 
 if ($ggufChoice -ne 'E') {
     Write-Log "Downloading LTX2 GGUF models..."
     if ($ggufChoice -in 'A', 'D') {
-        Save-File -Uri "$baseUrl/unet/LTX-2/ltx-2-19b-dev-Q8_0.gguf" -OutFile (Join-Path $ltxvUnetDir "ltx-2-19b-dev-Q8_0.gguf")
+        Save-File -Uri "$baseUrl/unet/LTX-2/ltx-2-19b-dev-Q8_0.gguf" -OutFile "$ltxvUnetDir/ltx-2-19b-dev-Q8_0.gguf"
     }
     if ($ggufChoice -in 'B', 'D') {
-        Save-File -Uri "$baseUrl/unet/LTX-2/ltx-2-19b-dev-Q5_K_S.gguf" -OutFile (Join-Path $ltxvUnetDir "ltx-2-19b-dev-Q5_K_S.gguf")
+        Save-File -Uri "$baseUrl/unet/LTX-2/ltx-2-19b-dev-Q5_K_S.gguf" -OutFile "$ltxvUnetDir/ltx-2-19b-dev-Q5_K_S.gguf"
     }
     if ($ggufChoice -in 'C', 'D') {
-        Save-File -Uri "$baseUrl/unet/LTX-2/ltx-2-19b-dev-Q4_K_S.gguf" -OutFile (Join-Path $ltxvUnetDir "ltx-2-19b-dev-Q4_K_S.gguf")
+        Save-File -Uri "$baseUrl/unet/LTX-2/ltx-2-19b-dev-Q4_K_S.gguf" -OutFile "$ltxvUnetDir/ltx-2-19b-dev-Q4_K_S.gguf"
     }
 }
 

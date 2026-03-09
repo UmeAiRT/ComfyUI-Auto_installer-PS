@@ -15,14 +15,14 @@ param(
 # ============================================================================
 # INITIALIZATION
 # ============================================================================
-$InstallPath = $InstallPath.Trim('"')
-Import-Module (Join-Path $PSScriptRoot "UmeAiRTUtils.psm1") -Force
+$InstallPath = $InstallPath.Trim('"').TrimEnd('\', '/').Replace('\', '/')
+Import-Module "$($PSScriptRoot.Replace('\','/'))/UmeAiRTUtils.psm1" -Force
 
 # ============================================================================
 # MAIN EXECUTION
 # ============================================================================
 
-$modelsPath = Join-Path $InstallPath "models"
+$modelsPath = "$InstallPath/models"
 if (-not (Test-Path $modelsPath)) {
     Write-Log "Models directory does not exist, creating it..." -Color Yellow
     New-Item -Path $modelsPath -ItemType Directory -Force | Out-Null
@@ -55,9 +55,9 @@ $ggufChoice = Read-UserChoice -Prompt "Do you want to download LTXV GGUF models?
 Write-Log "Starting LTX-Video model downloads..." -Color Cyan
 
 $baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/models"
-$ltxvChkptDir = Join-Path $modelsPath "checkpoints\LTXV"
-$ltxvUnetDir = Join-Path $modelsPath "unet\LTXV"
-$vaeDir = Join-Path $modelsPath "vae"
+$ltxvChkptDir = "$modelsPath/checkpoints/LTXV"
+$ltxvUnetDir = "$modelsPath/unet/LTXV"
+$vaeDir = "$modelsPath/vae"
 
 New-Item -Path $ltxvChkptDir, $ltxvUnetDir, $vaeDir -ItemType Directory -Force | Out-Null
 
@@ -65,29 +65,29 @@ $doDownload = ($baseChoice -ne 'D' -or $ggufChoice -ne 'E')
 
 if ($doDownload) {
     Write-Log "Downloading LTXV common support file (VAE)..."
-    Save-File -Uri "$baseUrl/vae/ltxv-13b-0.9.7-vae-BF16.safetensors" -OutFile (Join-Path $vaeDir "ltxv-13b-0.9.7-vae-BF16.safetensors")
+    Save-File -Uri "$baseUrl/vae/ltxv-13b-0.9.7-vae-BF16.safetensors" -OutFile "$vaeDir/ltxv-13b-0.9.7-vae-BF16.safetensors"
 }
 
 if ($baseChoice -ne 'D') {
     Write-Log "Downloading LTXV base model(s)..."
     if ($baseChoice -in 'A', 'C') {
-        Save-File -Uri "$baseUrl/checkpoints/LTXV/ltxv-13b-0.9.7-dev.safetensors" -OutFile (Join-Path $ltxvChkptDir "ltxv-13b-0.9.7-dev.safetensors")
+        Save-File -Uri "$baseUrl/checkpoints/LTXV/ltxv-13b-0.9.7-dev.safetensors" -OutFile "$ltxvChkptDir/ltxv-13b-0.9.7-dev.safetensors"
     }
     if ($baseChoice -in 'B', 'C') {
-        Save-File -Uri "$baseUrl/checkpoints/LTXV/ltxv-2b-0.9.6-dev-04-25.safetensors" -OutFile (Join-Path $ltxvChkptDir "ltxv-2b-0.9.6-dev-04-25.safetensors")
+        Save-File -Uri "$baseUrl/checkpoints/LTXV/ltxv-2b-0.9.6-dev-04-25.safetensors" -OutFile "$ltxvChkptDir/ltxv-2b-0.9.6-dev-04-25.safetensors"
     }
 }
 
 if ($ggufChoice -ne 'E') {
     Write-Log "Downloading LTXV GGUF models..."
     if ($ggufChoice -in 'A', 'D') {
-        Save-File -Uri "$baseUrl/unet/LTXV/ltxv-13b-0.9.7-dev-Q8_0.gguf" -OutFile (Join-Path $ltxvUnetDir "ltxv-13b-0.9.7-dev-Q8_0.gguf")
+        Save-File -Uri "$baseUrl/unet/LTXV/ltxv-13b-0.9.7-dev-Q8_0.gguf" -OutFile "$ltxvUnetDir/ltxv-13b-0.9.7-dev-Q8_0.gguf"
     }
     if ($ggufChoice -in 'B', 'D') {
-        Save-File -Uri "$baseUrl/unet/LTXV/ltxv-13b-0.9.7-dev-Q5_K_M.gguf" -OutFile (Join-Path $ltxvUnetDir "ltxv-13b-0.9.7-dev-Q5_K_M.gguf")
+        Save-File -Uri "$baseUrl/unet/LTXV/ltxv-13b-0.9.7-dev-Q5_K_M.gguf" -OutFile "$ltxvUnetDir/ltxv-13b-0.9.7-dev-Q5_K_M.gguf"
     }
     if ($ggufChoice -in 'C', 'D') {
-        Save-File -Uri "$baseUrl/unet/LTXV/ltxv-13b-0.9.7-dev-Q3_K_S.gguf" -OutFile (Join-Path $ltxvUnetDir "ltxv-13b-0.9.7-dev-Q3_K_S.gguf")
+        Save-File -Uri "$baseUrl/unet/LTXV/ltxv-13b-0.9.7-dev-Q3_K_S.gguf" -OutFile "$ltxvUnetDir/ltxv-13b-0.9.7-dev-Q3_K_S.gguf"
     }
 }
 

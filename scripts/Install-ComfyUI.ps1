@@ -38,7 +38,7 @@ Write-Host ""
 # ---------------------------------------------------------------------------
 # Resolve install path
 # ---------------------------------------------------------------------------
-$defaultPath = Split-Path -Path $PSScriptRoot -Parent
+$defaultPath = (Split-Path -Path $PSScriptRoot -Parent).Replace('\', '/')
 
 if (-not $InstallPath) {
     Write-Host "Where would you like to install ComfyUI?" -ForegroundColor Yellow
@@ -51,7 +51,7 @@ if (-not $InstallPath) {
     $InstallPath = if ($userInput) { $userInput } else { $defaultPath }
 }
 
-$InstallPath = $InstallPath.TrimEnd('\', '/')
+$InstallPath = $InstallPath.TrimEnd('\', '/').Replace('\', '/')
 
 Write-Host ""
 Write-Host "[INFO] Installing to: $InstallPath" -ForegroundColor Cyan
@@ -64,9 +64,9 @@ Write-Host ""
 # If psm1 is already present (re-run or fork setup), read config from JSON.
 # CLI params always take precedence. On fresh install (no psm1), use defaults.
 # ---------------------------------------------------------------------------
-$psm1Path       = Join-Path $PSScriptRoot "UmeAiRTUtils.psm1"
-$userConfigFile = Join-Path $InstallPath "umeairt-user-config.json"
-$repoConfigFile = Join-Path $InstallPath "repo-config.json"
+$psm1Path       = "$($PSScriptRoot.Replace('\','/'))/UmeAiRTUtils.psm1"
+$userConfigFile = "$InstallPath/umeairt-user-config.json"
+$repoConfigFile = "$InstallPath/repo-config.json"
 
 if (Test-Path $psm1Path) {
     Import-Module $psm1Path -Force
@@ -93,8 +93,8 @@ Write-Host "[INFO] Using: $GhUser/$GhRepoName @ $GhBranch" -ForegroundColor Cyan
 # ---------------------------------------------------------------------------
 # Prepare scripts folder
 # ---------------------------------------------------------------------------
-$scriptsFolder   = Join-Path $InstallPath "scripts"
-$bootstrapScript = Join-Path $scriptsFolder "Bootstrap-Downloader.ps1"
+$scriptsFolder   = "$InstallPath/scripts"
+$bootstrapScript = "$scriptsFolder/Bootstrap-Downloader.ps1"
 $bootstrapUrl    = "https://github.com/$GhUser/$GhRepoName/raw/$GhBranch/scripts/Bootstrap-Downloader.ps1"
 
 if (-not (Test-Path $scriptsFolder)) {
@@ -150,5 +150,5 @@ $configObj | ConvertTo-Json -Depth 10 | Set-Content $userConfigFile -Encoding UT
 # ---------------------------------------------------------------------------
 Write-Host "[INFO] Launching Phase 1 installer..." -ForegroundColor Cyan
 Write-Host ""
-$phase1 = Join-Path $scriptsFolder "Install-ComfyUI-Phase1.ps1"
+$phase1 = "$scriptsFolder/Install-ComfyUI-Phase1.ps1"
 & $phase1 -InstallPath $InstallPath

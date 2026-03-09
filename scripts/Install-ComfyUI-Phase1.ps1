@@ -22,19 +22,21 @@ param(
     [switch]$RunAdminTasks # Flag for elevated mode
 )
 
+$InstallPath = $InstallPath.TrimEnd('\', '/').Replace('\', '/')
+
 # --- Path Definitions ---
-$comfyPath = Join-Path $InstallPath "ComfyUI"
-$scriptPath = Join-Path $InstallPath "scripts"
-$condaPath = Join-Path $env:LOCALAPPDATA "Miniconda3"
-$condaExe = Join-Path $condaPath "Scripts\conda.exe"
-$logPath = Join-Path $InstallPath "logs"
-$logFile = Join-Path $logPath "install_log.txt"
+$comfyPath = "$InstallPath/ComfyUI"
+$scriptPath = "$InstallPath/scripts"
+$condaPath = "$($env:LOCALAPPDATA.Replace('\','/'))/Miniconda3"
+$condaExe = "$condaPath/Scripts/conda.exe"
+$logPath = "$InstallPath/logs"
+$logFile = "$logPath/install_log.txt"
 
 # --- Security Protocol ---
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 # --- Load dependencies EARLY ---
-$dependenciesFile = Join-Path $scriptPath "dependencies.json"
+$dependenciesFile = "$scriptPath/dependencies.json"
 if (-not (Test-Path $dependenciesFile)) {
     Write-Host "FATAL: dependencies.json not found at '$dependenciesFile'..." -ForegroundColor Red
     Read-Host
@@ -64,7 +66,7 @@ function Test-IsAdmin {
 }
 
 # --- Import Utilities ---
-Import-Module (Join-Path $scriptPath "UmeAiRTUtils.psm1") -Force
+Import-Module "$scriptPath/UmeAiRTUtils.psm1" -Force
 
 #===========================================================================
 # SECTION 2: MAIN SCRIPT EXECUTION
@@ -121,7 +123,7 @@ if ($RunAdminTasks) {
     }
 
     if (-not $msvcFound) {
-        $depFileAdmin = Join-Path $scriptPath "dependencies.json"
+        $depFileAdmin = "$scriptPath/dependencies.json"
         $vsToolAdmin = $null
         if (Test-Path $depFileAdmin) {
             try { $depsAdmin = Get-Content -Raw -Path $depFileAdmin | ConvertFrom-Json } catch { $depsAdmin = $null }
@@ -131,7 +133,7 @@ if ($RunAdminTasks) {
         }
         if ($vsToolAdmin -ne $null -and $vsToolAdmin.url) {
             Write-Host "- No compatible C++ tools found. Installing VS Build Tools..." -ForegroundColor Yellow
-            $vsInstallerAdmin = Join-Path $env:TEMP "vs_buildtools_admin.exe"
+            $vsInstallerAdmin = "$($env:TEMP.Replace('\','/'))/vs_buildtools_admin.exe"
             try {
                 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
                 Invoke-WebRequest -Uri $vsToolAdmin.url -OutFile $vsInstallerAdmin -UseBasicParsing -ErrorAction Stop
@@ -236,15 +238,15 @@ else {
         $installTypeChoice = Read-Host "Enter choice (1 or 2)"
     }
     $installType = if ($installTypeChoice -eq "1") { "Light" } else { "Full" }
-    $installTypeFile = Join-Path $scriptPath "install_type"
-    $phase2LauncherPath = Join-Path $scriptPath "Launch-Phase2.ps1"
-    $phase2ScriptPath = Join-Path $scriptPath "Install-ComfyUI-Phase2.ps1"
+    $installTypeFile = "$scriptPath/install_type"
+    $phase2LauncherPath = "$scriptPath/Launch-Phase2.ps1"
+    $phase2ScriptPath = "$scriptPath/Install-ComfyUI-Phase2.ps1"
 
     Write-Log "Checking/Installing aria2 (Download Accelerator)..." -Level 1
     $aria2Url = "https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0-win-64bit-build1.zip"
-    $aria2ZipPath = Join-Path $env:TEMP "aria2.zip"
-    $aria2InstallPath = Join-Path $env:LOCALAPPDATA "aria2"
-    $aria2ExePath = Join-Path $aria2InstallPath "aria2c.exe"
+    $aria2ZipPath = "$($env:TEMP.Replace('\','/'))/aria2.zip"
+    $aria2InstallPath = "$($env:LOCALAPPDATA.Replace('\','/'))/aria2"
+    $aria2ExePath = "$aria2InstallPath/aria2c.exe"
 
     if (-not (Test-Path $aria2ExePath)) {
         Write-Log "Downloading aria2..." -Level 2
@@ -279,12 +281,12 @@ else {
     # UV INSTALLATION
     # ---------------------------------------------------------
     Write-Log "Checking/Installing uv (Python package manager)..." -Level 1
-    $uvBinPath = Join-Path $env:LOCALAPPDATA "Programs\uv"
-    $uvExePath  = Join-Path $uvBinPath "uv.exe"
+    $uvBinPath = "$($env:LOCALAPPDATA.Replace('\','/'))/Programs/uv"
+    $uvExePath  = "$uvBinPath/uv.exe"
 
     if (-not (Test-Path $uvExePath)) {
         Write-Log "Downloading uv installer..." -Level 2
-        $uvInstallerPath = Join-Path $env:TEMP "uv-install.ps1"
+        $uvInstallerPath = "$($env:TEMP.Replace('\','/'))/uv-install.ps1"
         $uvInstallerUrl  = "https://astral.sh/uv/install.ps1"
         $uvSha256 = if ($dependencies.tools.PSObject.Properties["uv"] -and $dependencies.tools.uv.PSObject.Properties["sha256"]) { [string]$dependencies.tools.uv.sha256 } else { "" }
         try {
@@ -328,7 +330,7 @@ else {
             Write-Log "Initiating Git installation..." -Level 1
             # Git for Windows 2.47.1 (64-bit) - Official Standalone Installer
             $gitUrl = "https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe"
-            $gitInstaller = Join-Path $env:TEMP "git-installer.exe"
+            $gitInstaller = "$($env:TEMP.Replace('\','/'))/git-installer.exe"
             $gitSha256 = if ($dependencies.tools.PSObject.Properties["git"] -and $dependencies.tools.git.PSObject.Properties["sha256"]) { [string]$dependencies.tools.git.sha256 } else { "" }
 
             try {
@@ -419,7 +421,7 @@ else {
 
                 # Official Python 3.13.11 URL (Stable)
                 $pyUrl = "https://www.python.org/ftp/python/3.13.11/python-3.13.11-amd64.exe"
-                $pyInstaller = Join-Path $env:TEMP "python-3.13.11-amd64.exe"
+                $pyInstaller = "$($env:TEMP.Replace('\','/'))/python-3.13.11-amd64.exe"
                 $pySha256 = if ($dependencies.tools.PSObject.Properties["python"] -and $dependencies.tools.python.PSObject.Properties["sha256"]) { [string]$dependencies.tools.python.sha256 } else { "" }
 
                 try {
@@ -483,7 +485,7 @@ else {
         }
 
         # 5. Create venv
-        $venvPath = Join-Path $scriptPath "venv"
+        $venvPath = "$scriptPath/venv"
         if (-not (Test-Path $venvPath)) {
             Write-Log "Creating virtual environment (venv) at '$venvPath'..." -Level 1
             if (Get-Command "uv" -ErrorAction SilentlyContinue) {
@@ -503,15 +505,15 @@ else {
         # 6. Prepare Launch-Phase2.ps1 for venv
         $launcherContent = @'
 try {
-    . "$PSScriptRoot\venv\Scripts\Activate.ps1"
+    . "$($PSScriptRoot.Replace('\','/'))/venv/Scripts/Activate.ps1"
 } catch {
     Write-Host "FAILED to activate venv: $($_.Exception.Message)" -ForegroundColor Red
     Read-Host "Press Enter to exit"
     exit 1
 }
 Write-Host "Phase 2 Launch (venv)..." -ForegroundColor Cyan
-$installPath = Split-Path $PSScriptRoot -Parent
-& "$PSScriptRoot\Install-ComfyUI-Phase2.ps1" -InstallPath $installPath
+$installPath = (Split-Path $PSScriptRoot -Parent).Replace('\', '/')
+& "$($PSScriptRoot.Replace('\','/'))/Install-ComfyUI-Phase2.ps1" -InstallPath $installPath
 Write-Host "End of Phase 2. Press Enter to close this window."
 Read-Host
 '@
@@ -527,7 +529,7 @@ Read-Host
             Write-Log "Miniconda not found. Installing..." -Level 1 -Color Yellow
             $minicondaUrl = if ($dependencies.tools.PSObject.Properties["miniconda"] -and $dependencies.tools.miniconda.url) { $dependencies.tools.miniconda.url } else { "https://repo.anaconda.com/miniconda/Miniconda3-py313_25.1.1-2-Windows-x86_64.exe" }
             $minicondaSha256 = if ($dependencies.tools.PSObject.Properties["miniconda"] -and $dependencies.tools.miniconda.PSObject.Properties["sha256"]) { [string]$dependencies.tools.miniconda.sha256 } else { "" }
-            $minicondaInstaller = Join-Path $env:TEMP "Miniconda3-Windows-x86_64.exe"
+            $minicondaInstaller = "$($env:TEMP.Replace('\','/'))/Miniconda3-Windows-x86_64.exe"
             Save-File -Uri $minicondaUrl -OutFile $minicondaInstaller -ExpectedHash $minicondaSha256
             if ($dependencies.tools.PSObject.Properties["miniconda"] -and $dependencies.tools.miniconda.PSObject.Properties["authenticode_subject"] -and $dependencies.tools.miniconda.authenticode_subject) {
                 Confirm-Authenticode -Path $minicondaInstaller -ExpectedSubject $dependencies.tools.miniconda.authenticode_subject
@@ -563,8 +565,8 @@ Read-Host
 
         Write-Log "Attempting to remove old 'UmeAiRT' environment for a clean install..." -Level 1
         Invoke-AndLog "$condaExe" "env remove -n UmeAiRT -y" -IgnoreErrors
-        Write-Log "Creating new Conda environment 'UmeAiRT' from '$scriptPath\environment.yml'..." -Level 1
-        Invoke-AndLog "$condaExe" "env create -f `"$scriptPath\environment.yml`""
+        Write-Log "Creating new Conda environment 'UmeAiRT' from '$scriptPath/environment.yml'..." -Level 1
+        Invoke-AndLog "$condaExe" "env create -f `"$scriptPath/environment.yml`""
         Write-Log "Environment 'UmeAiRT' created successfully." -Level 2 -Color Green
 
         Write-Log "Conda environment ready." -Level 1 -Color Green
@@ -572,7 +574,7 @@ Read-Host
         # Prepare Launch-Phase2.ps1 for Conda
         $launcherContent = @'
 try {
-    $condaHook = Join-Path $env:LOCALAPPDATA "Miniconda3\shell\condabin\conda-hook.ps1"
+    $condaHook = "$($env:LOCALAPPDATA.Replace('\','/'))/Miniconda3/shell/condabin/conda-hook.ps1"
     . $condaHook
     conda activate UmeAiRT
 } catch {
@@ -581,8 +583,8 @@ try {
     exit 1
 }
 Write-Host "Phase 2 Launch (Conda)..." -ForegroundColor Cyan
-$installPath = Split-Path $PSScriptRoot -Parent
-& "$PSScriptRoot\Install-ComfyUI-Phase2.ps1" -InstallPath $installPath
+$installPath = (Split-Path $PSScriptRoot -Parent).Replace('\', '/')
+& "$($PSScriptRoot.Replace('\','/'))/Install-ComfyUI-Phase2.ps1" -InstallPath $installPath
 Write-Host "End of Phase 2. Press Enter to close this window."
 Read-Host
 '@

@@ -19,8 +19,10 @@
 #===========================================================================
 
 param(
-    [string]$InstallPath = (Split-Path -Path $PSScriptRoot -Parent)
+    [string]$InstallPath = ((Split-Path -Path $PSScriptRoot -Parent).Replace('\', '/'))
 )
+
+$InstallPath = $InstallPath.TrimEnd('\', '/').Replace('\', '/')
 
 # --- Encoding Support (CJK/Accents) ---
 # Force Windows Console to use UTF-8 (Code Page 65001)
@@ -35,17 +37,17 @@ $env:PYTHONUTF8 = "1"
 $env:PYTHONIOENCODING = "utf-8"
 
 # --- Paths ---
-$comfyPath = Join-Path $InstallPath "ComfyUI"
-$comfyUserPath = Join-Path $comfyPath "user"
-$scriptPath = Join-Path $InstallPath "scripts"
-$logPath = Join-Path $InstallPath "logs"
-$logFile = Join-Path $logPath "install_log.txt"
+$comfyPath = "$InstallPath/ComfyUI"
+$comfyUserPath = "$comfyPath/user"
+$scriptPath = "$InstallPath/scripts"
+$logPath = "$InstallPath/logs"
+$logFile = "$logPath/install_log.txt"
 
 # --- Security Protocol ---
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 # --- Load Dependencies ---
-$dependenciesFile = Join-Path (Split-Path -Path $MyInvocation.MyCommand.Definition -Parent) "dependencies.json"
+$dependenciesFile = "$($scriptPath)/dependencies.json"
 if (-not (Test-Path $dependenciesFile)) {
     Write-Host "FATAL: dependencies.json not found..." -ForegroundColor Red
     Read-Host
@@ -57,8 +59,8 @@ $dependencies = Get-Content -Raw -Path $dependenciesFile | ConvertFrom-Json
 if (-not (Test-Path $logPath)) { New-Item -ItemType Directory -Force -Path $logPath | Out-Null }
 
 # --- Import Utilities ---
-Import-Module (Join-Path $scriptPath "UmeAiRTUtils.psm1") -Force
-$global:logFile = Join-Path $logPath "install_log.txt"
+Import-Module "$scriptPath/UmeAiRTUtils.psm1" -Force
+$global:logFile = "$logPath/install_log.txt"
 $global:hasGpu = Test-NvidiaGpu
 
 #===========================================================================
@@ -66,15 +68,15 @@ $global:hasGpu = Test-NvidiaGpu
 #===========================================================================
 # This ensures we use the correct Python executable even if the .bat launcher wasn't used.
 
-$installTypeFile = Join-Path $scriptPath "install_type"
+$installTypeFile = "$scriptPath/install_type"
 $pythonExe = "python" # Default fallback (relies on PATH)
 
 if (Test-Path $installTypeFile) {
     $iType = Get-Content -Path $installTypeFile -Raw
     $iType = $iType.Trim()
-    
+
     if ($iType -eq "venv") {
-        $venvPython = Join-Path $scriptPath "venv\Scripts\python.exe"
+        $venvPython = "$scriptPath/venv/Scripts/python.exe"
         if (Test-Path $venvPython) {
             $pythonExe = $venvPython
             Write-Log "VENV MODE DETECTED: Using $pythonExe" -Level 1 -Color Cyan
@@ -82,7 +84,7 @@ if (Test-Path $installTypeFile) {
     }
     elseif ($iType -eq "conda") {
         # Checks specifically for the UmeAiRT environment python
-        $condaEnvPython = Join-Path $env:LOCALAPPDATA "Miniconda3\envs\UmeAiRT\python.exe"
+        $condaEnvPython = "$($env:LOCALAPPDATA.Replace('\','/'))/Miniconda3/envs/UmeAiRT/python.exe"
         if (Test-Path $condaEnvPython) {
             $pythonExe = $condaEnvPython
             Write-Log "CONDA MODE DETECTED: Using $pythonExe" -Level 1 -Color Cyan
@@ -131,8 +133,8 @@ Write-Log "Configuring External Folders Architecture..." -Level 0
 $externalFolders = @("custom_nodes", "models", "output", "input", "user")
 
 foreach ($folder in $externalFolders) {
-    $externalPath = Join-Path $InstallPath $folder
-    $internalPath = Join-Path $comfyPath $folder
+    $externalPath = "$InstallPath/$folder"
+    $internalPath = "$comfyPath/$folder"
 
     # Check if the internal folder exists (Standard ComfyUI folder from git clone)
     if (Test-Path $internalPath) {
@@ -150,7 +152,7 @@ foreach ($folder in $externalFolders) {
                 # CASE 2: External ALREADY exists (Previous install).
                 # We COPY content from internal to external (to fill missing default folders), then delete internal.
                 Write-Log "External '$folder' detected. Merging default structure..." -Level 1
-                Copy-Item -Path "$internalPath\*" -Destination $externalPath -Recurse -Force -ErrorAction SilentlyContinue
+                Copy-Item -Path "$internalPath/*" -Destination $externalPath -Recurse -Force -ErrorAction SilentlyContinue
                 Remove-Item -Path $internalPath -Recurse -Force
             }
         }
@@ -162,7 +164,7 @@ foreach ($folder in $externalFolders) {
 
     # Create Junction (Internal -> External)
     if (-not (Test-Path $internalPath)) {
-        cmd /c "mklink /J `"$internalPath`" `"$externalPath`"" | Out-Null
+        cmd /c "mklink /J `"$($internalPath.Replace('/','\'))`" `"$($externalPath.Replace('/','\'))`"" | Out-Null
         Write-Log "Linked ComfyUI\$folder -> $folder (External)" -Level 1 -Color Cyan
     }
 }
@@ -193,7 +195,7 @@ Write-Log "Installing torch packages" -Level 1
 Invoke-AndLog "uv" "pip install --python `"$pythonExe`" $($dependencies.pip_packages.torch.packages) --index-url $($dependencies.pip_packages.torch.index_url)"
 
 Write-Log "Installing ComfyUI requirements" -Level 1
-Invoke-AndLog "uv" "pip install --python `"$pythonExe`" -r `"$comfyPath\$($dependencies.pip_packages.comfyui_requirements)`""
+Invoke-AndLog "uv" "pip install --python `"$pythonExe`" -r `"$comfyPath/$($dependencies.pip_packages.comfyui_requirements)`""
 
 # --- Step 4: Install Final Python Dependencies ---
 Write-Log "Installing Python Dependencies" -Level 0
@@ -204,18 +206,18 @@ Invoke-AndLog "uv" "pip install --python `"$pythonExe`" $($dependencies.pip_pack
 Write-Log "Installing Custom Nodes via Manager CLI" -Level 0
 
 # Thanks to junctions, we target the internal path, but data is stored externally!
-$internalCustomNodes = Join-Path $comfyPath "custom_nodes"
+$internalCustomNodes = "$comfyPath/custom_nodes"
 Write-Log "Installing UmeAiRT Sync Manager (Core Component)..." -Level 1
 
 # 1. Install ComfyUI-Manager FIRST (Required for CLI)
-$managerPath = Join-Path $internalCustomNodes "ComfyUI-Manager"
+$managerPath = "$internalCustomNodes/ComfyUI-Manager"
 if (-not (Test-Path $managerPath)) {
     Write-Log "Installing ComfyUI-Manager (Required for CLI)..." -Level 1 -Color Cyan
     Invoke-AndLog "git" "clone https://github.com/ltdrdata/ComfyUI-Manager.git `"$managerPath`""
 }
 
 # 2. Dependencies
-$managerReqs = Join-Path $managerPath "requirements.txt"
+$managerReqs = "$managerPath/requirements.txt"
 if (Test-Path $managerReqs) {
     Write-Log "Installing ComfyUI-Manager dependencies (typer, etc.)..." -Level 1
     Invoke-AndLog "uv" "pip install --python `"$pythonExe`" -r `"$managerReqs`""
@@ -225,8 +227,8 @@ if (Test-Path $managerReqs) {
 Set-ManagerUseUv -InstallPath $InstallPath
 
 # 3. CLI Execution
-$cmCliScript = Join-Path $managerPath "cm-cli.py"
-$snapshotFile = Join-Path $scriptPath "snapshot.json"
+$cmCliScript = "$managerPath/cm-cli.py"
+$snapshotFile = "$scriptPath/snapshot.json"
 
 # Set PYTHONPATH so the Manager finds its local modules (utils, etc.)
 $env:PYTHONPATH = "$comfyPath;$managerPath;$env:PYTHONPATH"
@@ -251,7 +253,7 @@ else {
     # --- METHOD B: Fallback to CSV ---
     Write-Log "No snapshot.json found. Falling back to custom_nodes.csv..." -Level 1 -Color Yellow
     
-    $csvPath = Join-Path $InstallPath $dependencies.files.custom_nodes_csv.destination
+    $csvPath = "$InstallPath/$($dependencies.files.custom_nodes_csv.destination.Replace('\','/'))"
     if (Test-Path $csvPath) {
         $customNodes = Import-Csv -Path $csvPath
         $successCount = 0
@@ -260,7 +262,7 @@ else {
         foreach ($node in $customNodes) {
             $nodeName = $node.Name
             $repoUrl = $node.RepoUrl
-            $possiblePath = Join-Path $internalCustomNodes $nodeName
+            $possiblePath = "$internalCustomNodes/$nodeName"
 
             if (-not (Test-Path $possiblePath)) {
                 Write-Log "Installing $nodeName via CLI..." -Level 1
@@ -286,12 +288,12 @@ else {
 }
 
 # UmeAiRT-Sync installation
-$umeSyncPath = Join-Path $internalCustomNodes "ComfyUI-UmeAiRT-Sync"
+$umeSyncPath = "$internalCustomNodes/ComfyUI-UmeAiRT-Sync"
 if (-not (Test-Path $umeSyncPath)) {
     Write-Log "Installing ComfyUI-UmeAiRT-Sync (for workflows auto-update)..." -Level 1 -Color Cyan
     Invoke-AndLog "git" "clone https://github.com/UmeAiRT/ComfyUI-UmeAiRT-Sync.git `"$umeSyncPath`""
-    if (Test-Path "$umeSyncPath\requirements.txt") {
-        Invoke-AndLog "uv" "pip install --python `"$pythonExe`" -r `"$umeSyncPath\requirements.txt`""
+    if (Test-Path "$umeSyncPath/requirements.txt") {
+        Invoke-AndLog "uv" "pip install --python `"$pythonExe`" -r `"$umeSyncPath/requirements.txt`""
     }
 }
 else {
@@ -301,11 +303,11 @@ else {
 # ===========================================================================
 # HOTFIX: ComfyUI-MagCache (Line 13 Import Fix)
 # ===========================================================================
-$magCacheFolder = Join-Path $internalCustomNodes "ComfyUI-MagCache"
+$magCacheFolder = "$internalCustomNodes/ComfyUI-MagCache"
 $filesToPatch = @("nodes.py", "nodes_calibration.py")
 
 foreach ($fileName in $filesToPatch) {
-    $targetFile = Join-Path $magCacheFolder $fileName
+    $targetFile = "$magCacheFolder/$fileName"
 
     if (Test-Path $targetFile) {
         Write-Log "Applying Hotfix to $fileName (Line 13)..." -Level 1
@@ -341,7 +343,7 @@ $env:COMFYUI_PATH = $null
 Write-Log "Installing packages from .whl files..." -Level 1
 foreach ($wheel in $dependencies.pip_packages.wheels) {
     Write-Log "Installing $($wheel.name)" -Level 2
-    $wheelPath = Join-Path $scriptPath "$($wheel.name).whl"
+    $wheelPath = "$scriptPath/$($wheel.name).whl"
      
     try {
         $wheelSha256 = if ($wheel.PSObject.Properties["sha256"]) { [string]$wheel.sha256 } else { "" }
@@ -372,7 +374,7 @@ if (-not $isConda) {
     Write-Log "Venv detected. Using DazzleML Optimized Installer..." -Level 1 -Color Cyan
     
     $installerInfo = $dependencies.files.installer_script
-    $installerDest = Join-Path $InstallPath $installerInfo.destination
+    $installerDest = "$InstallPath/$($installerInfo.destination.Replace('\','/'))"
 
     try {
         $dazzleSha256 = if ($installerInfo.PSObject.Properties["sha256"]) { [string]$installerInfo.sha256 } else { "" }
@@ -423,8 +425,8 @@ else {
 
 # 1. Define variables
 $JsonUrl = "https://raw.githubusercontent.com/UmeAiRT/ComfyUI-Auto_installer/main/scripts/nunchaku_versions.json" 
-$TargetDir = "$comfyPath\custom_nodes\ComfyUI-nunchaku"
-$TargetFile = "$TargetDir\nunchaku_versions.json"
+$TargetDir = "$comfyPath/custom_nodes/ComfyUI-nunchaku"
+$TargetFile = "$TargetDir/nunchaku_versions.json"
 
 Write-Log "Configuring nunchaku_versions.json..." -Level 1 -Color Cyan
 
@@ -451,8 +453,8 @@ catch {
 
 Write-Log "Downloading ComfyUI custom settings..." -Level 1
 $settingsFile = $dependencies.files.comfy_settings
-$settingsDest = Join-Path $InstallPath $settingsFile.destination
-$settingsDir = Split-Path $settingsDest -Parent
+$settingsDest = "$InstallPath/$($settingsFile.destination.Replace('\','/'))"
+$settingsDir = (Split-Path $settingsDest -Parent).Replace('\', '/')
 if (-not (Test-Path $settingsDir)) { New-Item -Path $settingsDir -ItemType Directory -Force | Out-Null }
 $settingsSha256 = if ($settingsFile.PSObject.Properties["sha256"]) { [string]$settingsFile.sha256 } else { "" }
 Save-File -Uri $settingsFile.url -OutFile $settingsDest -ExpectedHash $settingsSha256
@@ -471,10 +473,10 @@ $modelPacks = @(
     @{Name = "QWEN"; ScriptName = "Download-QWEN-Models.ps1" },
     @{Name = "Z-IMAGE"; ScriptName = "Download-Z-IMAGES-Models.ps1" }
 )
-$scriptsSubFolder = Join-Path $InstallPath "scripts"
+$scriptsSubFolder = "$InstallPath/scripts"
 
 foreach ($pack in $modelPacks) {
-    $packScriptPath = Join-Path $scriptsSubFolder $pack.ScriptName
+    $packScriptPath = "$scriptsSubFolder/$($pack.ScriptName)"
     if (-not (Test-Path $packScriptPath)) {
         Write-Log "Model downloader script not found: '$($pack.ScriptName)'. Skipping." -Level 1 -Color Red
         continue
