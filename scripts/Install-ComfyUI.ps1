@@ -28,7 +28,6 @@ $env:PYTHONUTF8 = "1"
 # ---------------------------------------------------------------------------
 # Welcome
 # ---------------------------------------------------------------------------
-Clear-Host
 Write-Host ""
 Write-Host "============================================================================" -ForegroundColor Cyan
 Write-Host "          Welcome to the UmeAiRT ComfyUI Installer" -ForegroundColor Cyan
@@ -72,6 +71,8 @@ _RotateLog $logFile
 _RotateLog "$logPath/bootstrap.log"
 _AppendLog $logFile "=== Install session started ==="
 _AppendLog $logFile "InstallPath: $InstallPath"
+_AppendLog $logFile "PSVersion: $($PSVersionTable.PSVersion)  PSEdition: $($PSVersionTable.PSEdition)"
+_AppendLog $logFile "Fork (bat-resolved): $GhUser/$GhRepoName @ $GhBranch"
 
 Write-Host ""
 Write-Host "[INFO] Installing to: $InstallPath" -ForegroundColor Cyan
