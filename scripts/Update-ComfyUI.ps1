@@ -60,6 +60,30 @@ $global:logFile = $logFile
 $global:totalSteps = 4
 $global:currentStep = 0
 
+# --- Migrate repo-config.json → umeairt-user-config.json (one-time, for pre-fix/network-exposure installs) ---
+$userConfigFile  = "$InstallPath/umeairt-user-config.json"
+$legacyConfigFile = "$InstallPath/repo-config.json"
+if (-not (Test-Path $userConfigFile) -and (Test-Path $legacyConfigFile)) {
+    Write-Log "Migrating repo-config.json → umeairt-user-config.json..." -Color Cyan
+    try {
+        $legacy = Get-Content $legacyConfigFile -Raw | ConvertFrom-Json
+        $newCfg = [ordered]@{
+            gh_user        = if ($legacy.PSObject.Properties['gh_user']     -and $legacy.gh_user)     { [string]$legacy.gh_user }     else { "" }
+            gh_reponame    = if ($legacy.PSObject.Properties['gh_reponame'] -and $legacy.gh_reponame) { [string]$legacy.gh_reponame } else { "" }
+            gh_branch      = if ($legacy.PSObject.Properties['gh_branch']   -and $legacy.gh_branch)   { [string]$legacy.gh_branch }   else { "" }
+            listen_enabled = $false
+            listen_address = ""
+            listen_port    = 8188
+            snapshot_path  = ""
+        }
+        $newCfg | ConvertTo-Json -Depth 10 | Set-Content -Path $userConfigFile -Encoding UTF8
+        Rename-Item $legacyConfigFile -NewName "repo-config.json.migrated" -Force -ErrorAction SilentlyContinue
+        Write-Log "Migration complete. Old file preserved as repo-config.json.migrated." -Color Green
+    } catch {
+        Write-Log "WARNING: Migration failed: $($_.Exception.Message). Falling back to repo-config.json." -Color Yellow
+    }
+}
+
 # --- Resolve fork config: CLI args take precedence over config file ---
 if (-not $GhUser) {
     $cfgLines = Read-UserConfig `
