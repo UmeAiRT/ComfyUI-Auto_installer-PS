@@ -79,6 +79,8 @@ _AppendLog $_bootstrapLog "=== Bootstrap started: $GhUser/$GhRepoName @ $GhBranc
 # Set TLS protocol for compatibility
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+$failed = @()
+
 foreach ($file in $filesToDownload) {
     $uri = $baseUrl + $file.RepoPath
     $outFile = ConvertTo-ForwardSlash (Join-Path $InstallPath $file.LocalPath)
@@ -100,11 +102,21 @@ foreach ($file in $filesToDownload) {
         _AppendLog $_bootstrapLog "Downloaded $($file.RepoPath)"
     } catch {
         _AppendLog $_bootstrapLog "FAILED: $($file.RepoPath) — $($_.Exception.Message)"
-        Write-Host "[ERROR] Failed to download '$($file.RepoPath)'. Please check your internet connection and the repository URL." -ForegroundColor Red
-        # Pause to allow user to see the error, then exit.
-        Read-Host "Press Enter to exit."
-        exit 1
+        Write-Host "[WARN] Failed to download '$($file.RepoPath)': $($_.Exception.Message)" -ForegroundColor Yellow
+        $failed += $file.RepoPath
     }
+}
+
+if ($failed.Count -gt 0) {
+    _AppendLog $_bootstrapLog "=== Bootstrap completed with $($failed.Count) failure(s) ==="
+    Write-Host ""
+    Write-Host "################################################################################" -ForegroundColor Red
+    Write-Host "[ERROR] Bootstrap failed to download $($failed.Count) file(s):" -ForegroundColor Red
+    $failed | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
+    Write-Host "[ERROR] These files were NOT updated. Re-run the update to retry." -ForegroundColor Red
+    Write-Host "################################################################################" -ForegroundColor Red
+    Write-Host ""
+    exit 1
 }
 
 _AppendLog $_bootstrapLog "=== Bootstrap complete ==="

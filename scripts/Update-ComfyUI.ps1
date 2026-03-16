@@ -97,7 +97,11 @@ Write-Host "[INFO] Updating bootstrap and all scripts ($GhUser/$GhRepoName @ $Gh
 try {
     Invoke-WebRequest -Uri $bootstrapUrl -OutFile $bootstrapScript -UseBasicParsing -ErrorAction Stop
     & $bootstrapScript -InstallPath $InstallPath -GhUser $GhUser -GhRepoName $GhRepoName -GhBranch $GhBranch -SkipSelf
-    Write-Host "[OK] All scripts are up-to-date." -ForegroundColor Green
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log "WARNING: Bootstrap completed with download failures — some files may not be updated. Check logs/bootstrap.log." -Color Yellow
+    } else {
+        Write-Host "[OK] All scripts are up-to-date." -ForegroundColor Green
+    }
 } catch {
     Write-Host "[WARN] Bootstrap self-update failed: $($_.Exception.Message)" -ForegroundColor Yellow
     Write-Host "[WARN] Continuing with existing scripts." -ForegroundColor Yellow
