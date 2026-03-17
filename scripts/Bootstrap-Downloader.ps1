@@ -13,16 +13,13 @@
     The GitHub repository name (default: "ComfyUI-Auto_installer").
 .PARAMETER GhBranch
     The GitHub branch to use (default: "main").
-.PARAMETER SkipSelf
-    If true, skips downloading 'UmeAiRT-Update-ComfyUI.bat' to avoid file locking issues during self-updates.
 #>
 
 param(
     [string]$InstallPath,
     [string]$GhUser = "UmeAiRT",
     [string]$GhRepoName = "ComfyUI-Auto_installer",
-    [string]$GhBranch = "main",
-    [switch]$SkipSelf = $false
+    [string]$GhBranch = "main"
 )
 
 # Inline path helper — UmeAiRTUtils.psm1 is not yet available during bootstrap
@@ -70,6 +67,7 @@ $filesToDownload = @(
     @{ RepoPath = "UmeAiRT-Start-ComfyUI.bat";           LocalPath = "UmeAiRT-Start-ComfyUI.bat" },
     @{ RepoPath = "UmeAiRT-Start-ComfyUI_LowVRAM.bat";   LocalPath = "UmeAiRT-Start-ComfyUI_LowVRAM.bat" },
     @{ RepoPath = "UmeAiRT-Download_models.bat";         LocalPath = "UmeAiRT-Download_models.bat" },
+    @{ RepoPath = "UmeAiRT-Install-ComfyUI.bat";         LocalPath = "UmeAiRT-Install-ComfyUI.bat" },
     @{ RepoPath = "UmeAiRT-Update-ComfyUI.bat";          LocalPath = "UmeAiRT-Update-ComfyUI.bat" }
 )
 
@@ -84,11 +82,6 @@ $failed = @()
 foreach ($file in $filesToDownload) {
     $uri = $baseUrl + $file.RepoPath
     $outFile = ConvertTo-ForwardSlash (Join-Path $InstallPath $file.LocalPath)
-
-    if ($SkipSelf -and $file.LocalPath -eq "UmeAiRT-Update-ComfyUI.bat") {
-        Write-Host "  - Skipping 'UmeAiRT-Update-ComfyUI.bat' (SkipSelf)"
-        continue
-    }
 
     # Ensure the destination directory exists before downloading
     $outDir = ConvertTo-ForwardSlash (Split-Path -Path $outFile -Parent)

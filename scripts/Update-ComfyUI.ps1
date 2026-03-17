@@ -61,17 +61,40 @@ if (-not (Test-Path $userConfigFile) -and (Test-Path $legacyConfigFile)) {
     try {
         $legacy = Get-Content $legacyConfigFile -Raw | ConvertFrom-Json
         $newCfg = [ordered]@{
+            "_comment"             = @(
+                "Migrated automatically from repo-config.json on first update to fix/network-exposure or later.",
+                "This file will NEVER be overwritten by bootstrap or updates.",
+                "Do NOT commit umeairt-user-config.json — it is personal to your machine.",
+                "Leave any field as its default value (or remove it entirely) to use the built-in default."
+            )
+            "_section_repository"  = "--- Fork / Repository Source ---"
+            "_comment_repository"  = @(
+                "Override the GitHub repository that bootstrap downloads scripts from.",
+                "Useful if you are running a fork. Leave all three empty to use the upstream defaults."
+            )
             gh_user        = if ($legacy.PSObject.Properties['gh_user']     -and $legacy.gh_user)     { [string]$legacy.gh_user }     else { "" }
             gh_reponame    = if ($legacy.PSObject.Properties['gh_reponame'] -and $legacy.gh_reponame) { [string]$legacy.gh_reponame } else { "" }
             gh_branch      = if ($legacy.PSObject.Properties['gh_branch']   -and $legacy.gh_branch)   { [string]$legacy.gh_branch }   else { "" }
+            "_section_listen"      = "--- Network Listen Configuration ---"
+            "_comment_listen"      = @(
+                "By default ComfyUI binds to 127.0.0.1 (localhost only).",
+                "Set listen_enabled to true AND provide a listen_address to expose ComfyUI on additional interfaces.",
+                "WARNING: '0.0.0.0' or '::' exposes ComfyUI to ALL network interfaces."
+            )
             listen_enabled = $false
             listen_address = ""
             listen_port    = 8188
+            "_section_snapshot"    = "--- Custom Node Snapshot ---"
+            "_comment_snapshot"    = @(
+                "Optional path to a snapshot file to use during updates.",
+                "Leave empty to be prompted each time (recommended: saves current nodes first)."
+            )
             snapshot_path  = ""
         }
         $newCfg | ConvertTo-Json -Depth 10 | Set-Content -Path $userConfigFile -Encoding UTF8
-        Rename-Item $legacyConfigFile -NewName "repo-config.json.migrated" -Force -ErrorAction SilentlyContinue
-        Write-Log "Migration complete. Old file preserved as repo-config.json.migrated." -Color Green
+        # repo-config.json intentionally left in place — old Update bat still reads it for fork settings
+        # until the bat itself gets updated by bootstrap on this run.
+        Write-Log "Migration complete. repo-config.json left in place for compatibility." -Color Green
     } catch {
         Write-Log "WARNING: Migration failed: $($_.Exception.Message). Falling back to repo-config.json." -Color Yellow
     }
@@ -96,7 +119,7 @@ $bootstrapScript = "$($PSScriptRoot.Replace('\','/'))/Bootstrap-Downloader.ps1"
 Write-Host "[INFO] Updating bootstrap and all scripts ($GhUser/$GhRepoName @ $GhBranch)..." -ForegroundColor Cyan
 try {
     Invoke-WebRequest -Uri $bootstrapUrl -OutFile $bootstrapScript -UseBasicParsing -ErrorAction Stop
-    & $bootstrapScript -InstallPath $InstallPath -GhUser $GhUser -GhRepoName $GhRepoName -GhBranch $GhBranch -SkipSelf
+    & $bootstrapScript -InstallPath $InstallPath -GhUser $GhUser -GhRepoName $GhRepoName -GhBranch $GhBranch
     if ($LASTEXITCODE -ne 0) {
         Write-Log "WARNING: Bootstrap completed with download failures — some files may not be updated. Check logs/bootstrap.log." -Color Yellow
     } else {
