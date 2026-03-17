@@ -179,6 +179,7 @@ function Confirm-FileHash {
     }
     if ($actual -ne $Expected.ToUpper()) {
         Remove-Item $Path -Force -ErrorAction SilentlyContinue
+        Remove-Item "$Path.aria2" -Force -ErrorAction SilentlyContinue  # remove aria2 control file so next run downloads clean
         throw "SECURITY: Hash mismatch for '$(Split-Path $Path -Leaf)'`n  Expected: $Expected`n  Actual:   $actual`n  File deleted. Aborting."
     }
     Write-Log "  [verified] $(Split-Path $Path -Leaf)" -Color Green
@@ -267,6 +268,8 @@ function Save-File {
         }
         return
     }
+    # Remove stale aria2 control file so aria2c starts a fresh download instead of resuming a corrupted partial
+    Remove-Item "$OutFile.aria2" -Force -ErrorAction SilentlyContinue
     Write-Log "Downloading `"$($Uri.Split('/')[-1])`"" -Level 2 -Color DarkGray
     
     # Expected path for aria2c.exe (installed by Phase 1)
