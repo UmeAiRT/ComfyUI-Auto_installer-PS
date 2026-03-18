@@ -268,6 +268,9 @@ function Save-File {
         }
         return
     }
+    # Remove existing file so aria2c doesn't auto-rename its output (--auto-file-renaming default=true
+    # would otherwise save to e.g. foo.1.py and leave Confirm-FileHash checking the stale original)
+    Remove-Item $OutFile -Force -ErrorAction SilentlyContinue
     # Remove stale aria2 control file so aria2c starts a fresh download instead of resuming a corrupted partial
     Remove-Item "$OutFile.aria2" -Force -ErrorAction SilentlyContinue
     Write-Log "Downloading `"$($Uri.Split('/')[-1])`"" -Level 2 -Color DarkGray
