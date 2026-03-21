@@ -27,3 +27,5 @@ Desktop.ini
 *~
 .vscode/
 .idea/
+/docs/superpowers
+.claude/settings.local.json
