@@ -12,6 +12,10 @@
 .PARAMETER SnapshotPath
     Optional path to a specific snapshot file to use for node restore.
     If omitted the script prompts interactively (recommended: save current nodes first).
+.PARAMETER v
+    Verbose mode: show [INFO] messages and command output on success.
+.PARAMETER vv
+    Extra-verbose mode: all of -v, plus print each command line before running it.
 #>
 
 param(
@@ -19,7 +23,9 @@ param(
     [string]$SnapshotPath = "",
     [string]$GhUser       = "",   # empty = read from config
     [string]$GhRepoName   = "",
-    [string]$GhBranch     = ""
+    [string]$GhBranch     = "",
+    [switch]$v,                   # -v  : show [INFO] messages + command output on success
+    [switch]$vv                   # -vv : all of -v + print each command line before running
 )
 
 #===========================================================================
@@ -50,6 +56,7 @@ Import-Module "$($PSScriptRoot.Replace('\','/'))/UmeAiRTUtils.psm1" -Force
 Invoke-LogRotation "$logPath/update.log"
 Invoke-LogRotation "$logPath/bootstrap.log"
 $global:logFile = $logFile
+$global:Verbosity = if ($vv) { 2 } elseif ($v) { 1 } else { 0 }
 $global:totalSteps = 4
 $global:currentStep = 0
 

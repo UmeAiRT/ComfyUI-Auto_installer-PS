@@ -11,6 +11,10 @@
     The root directory for the installation.
 .PARAMETER RunAdminTasks
     Internal flag used when self-elevating to run administrative tasks.
+.PARAMETER v
+    Verbose mode: show [INFO] messages and command output on success.
+.PARAMETER vv
+    Extra-verbose mode: all of -v, plus print each command line before running it.
 #>
 
 #===========================================================================
@@ -19,7 +23,9 @@
 
 param(
     [string]$InstallPath,
-    [switch]$RunAdminTasks # Flag for elevated mode
+    [switch]$RunAdminTasks, # Flag for elevated mode
+    [switch]$v,             # -v  : show [INFO] messages + command output on success
+    [switch]$vv             # -vv : all of -v + print each command line before running
 )
 
 $InstallPath = $InstallPath.TrimEnd('\', '/').Replace('\', '/')
@@ -68,6 +74,7 @@ function Test-IsAdmin {
 # --- Import Utilities ---
 Import-Module "$scriptPath/UmeAiRTUtils.psm1" -Force
 $global:logFile = $logFile
+$global:Verbosity = if ($vv) { 2 } elseif ($v) { 1 } else { 0 }
 
 #===========================================================================
 # SECTION 2: MAIN SCRIPT EXECUTION
@@ -205,7 +212,8 @@ else {
         Write-Host "`nAdministrator privileges are required for initial setup." -ForegroundColor Yellow
         Write-Host "Re-running part of the script with elevation..." -ForegroundColor Yellow
         Write-Host "Please accept the UAC prompt." -ForegroundColor Yellow
-        $psArgs = "-ExecutionPolicy Bypass -NoProfile -File `"$($MyInvocation.MyCommand.Definition)`" -RunAdminTasks -InstallPath `"$InstallPath`""
+        $verbosityFlag = if ($vv) { " -vv" } elseif ($v) { " -v" } else { "" }
+        $psArgs = "-ExecutionPolicy Bypass -NoProfile -File `"$($MyInvocation.MyCommand.Definition)`" -RunAdminTasks -InstallPath `"$InstallPath`"$verbosityFlag"
         try {
             $adminProcess = Start-Process $psExe -Verb RunAs -ArgumentList $psArgs -Wait -PassThru -ErrorAction Stop
             if ($adminProcess.ExitCode -ne 0) { throw "The administrator process failed (code $($adminProcess.ExitCode))." }
@@ -615,6 +623,7 @@ Read-Host
 
     Write-Log "Phase 2 of the installation has been launched..." -Level 0
     Write-Log "A new window will open for Phase 2..." -Level 2
+    $env:UMEAIRT_VERBOSITY = "$global:Verbosity"
     try { Start-Process $psExe -ArgumentList "-ExecutionPolicy Bypass -NoProfile -File `"$phase2LauncherPath`"" -Wait -ErrorAction Stop } catch { Write-Log "ERROR: Unable to launch Phase 2 ($($_.Exception.Message))." -Color Red; Read-Host "Press Enter."; exit 1 }
 
     #===========================================================================

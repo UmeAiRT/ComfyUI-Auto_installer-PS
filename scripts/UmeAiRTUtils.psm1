@@ -9,6 +9,17 @@
 #>
 
 # ============================================================================
+# VERBOSITY
+# ============================================================================
+# Callers set $global:Verbosity before importing this module (or immediately after).
+#   0 = normal  (default)
+#   1 = -v      : show [INFO] messages + command output on success
+#   2 = -vv     : all of -v + print "Executing: cmd args" before each command
+if (-not (Get-Variable -Name Verbosity -Scope Global -ErrorAction SilentlyContinue)) {
+    $global:Verbosity = 0
+}
+
+# ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
 
@@ -64,6 +75,9 @@ function Write-Log {
         [string]$Color = "Default"
     )
     
+    # Level 3 ([INFO]) is only shown when verbosity >= 1 (-v or -vv)
+    if ($Level -eq 3 -and $global:Verbosity -lt 1) { return }
+
     $prefix = ""
     $defaultColor = "White"
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
@@ -120,7 +134,10 @@ function Invoke-AndLog {
 
     $tempLogFile = Join-Path $env:TEMP ([System.Guid]::NewGuid().ToString() + ".tmp")
     try {
-        Write-Log "Executing: $File $($Arguments -join ' ')" -Level 3 -Color DarkGray
+        # -vv (Verbosity >= 2): print the command line before running
+        if ($global:Verbosity -ge 2) {
+            Write-Host "      [CMD] $File $($Arguments -join ' ')" -ForegroundColor DarkGray
+        }
         & $File @Arguments *>&1 | Out-File -FilePath $tempLogFile -Encoding utf8
         $output = if (Test-Path $tempLogFile) { Get-Content $tempLogFile } else { @() }
 
@@ -133,6 +150,10 @@ function Invoke-AndLog {
         }
         else {
             Add-Content -Path $global:logFile -Value $output -Encoding utf8 -ErrorAction SilentlyContinue
+            # -v (Verbosity >= 1): also echo successful output to console
+            if ($global:Verbosity -ge 1) {
+                $output | ForEach-Object { Write-Host $_ }
+            }
         }
     }
     catch {

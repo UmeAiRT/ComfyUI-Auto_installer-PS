@@ -13,14 +13,21 @@
     The GitHub repository name (default: "ComfyUI-Auto_installer").
 .PARAMETER GhBranch
     The GitHub branch to use (default: "main").
+.PARAMETER v
+    Verbose mode: echo log entries to console in addition to the log file.
+.PARAMETER vv
+    Extra-verbose mode: all of -v, plus print the full download URI for each file.
 #>
 
 param(
     [string]$InstallPath,
     [string]$GhUser = "UmeAiRT",
     [string]$GhRepoName = "ComfyUI-Auto_installer",
-    [string]$GhBranch = "main"
+    [string]$GhBranch = "main",
+    [switch]$v,   # -v  : also echo log entries to console
+    [switch]$vv   # -vv : all of -v + show full URIs for each download
 )
+$_verbosity = if ($vv) { 2 } elseif ($v) { 1 } else { 0 }
 
 # Inline path helper — UmeAiRTUtils.psm1 is not yet available during bootstrap
 function ConvertTo-ForwardSlash { param([string]$Path) $Path.Replace('\', '/') }
@@ -29,6 +36,7 @@ function ConvertTo-ForwardSlash { param([string]$Path) $Path.Replace('\', '/') }
 function _AppendLog { param([string]$f, [string]$m)
     $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
     Add-Content -Path $f -Value "[$ts] $m" -Encoding UTF8 -ErrorAction SilentlyContinue
+    if ($script:_verbosity -ge 1) { Write-Host "  [LOG] $m" -ForegroundColor DarkGray }
 }
 $_bootstrapLog = ConvertTo-ForwardSlash (Join-Path $InstallPath "logs/bootstrap.log")
 
@@ -90,6 +98,7 @@ foreach ($file in $filesToDownload) {
     }
 
     Write-Host "  - Downloading $($file.RepoPath)..."
+    if ($_verbosity -ge 2) { Write-Host "      [URI] $uri" -ForegroundColor DarkGray }
     try {
         Invoke-WebRequest -Uri $uri -OutFile $outFile -ErrorAction Stop
         _AppendLog $_bootstrapLog "Downloaded $($file.RepoPath)"

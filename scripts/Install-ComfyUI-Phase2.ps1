@@ -12,6 +12,10 @@
     - Downloading optional model packs.
 .PARAMETER InstallPath
     The root directory for the installation.
+.PARAMETER v
+    Verbose mode: show [INFO] messages and command output on success.
+.PARAMETER vv
+    Extra-verbose mode: all of -v, plus print each command line before running it.
 #>
 
 #===========================================================================
@@ -19,7 +23,9 @@
 #===========================================================================
 
 param(
-    [string]$InstallPath = ((Split-Path -Path $PSScriptRoot -Parent).Replace('\', '/'))
+    [string]$InstallPath = ((Split-Path -Path $PSScriptRoot -Parent).Replace('\', '/')),
+    [switch]$v,   # -v  : show [INFO] messages + command output on success
+    [switch]$vv   # -vv : all of -v + print each command line before running
 )
 
 $InstallPath = $InstallPath.TrimEnd('\', '/').Replace('\', '/')
@@ -61,6 +67,12 @@ if (-not (Test-Path $logPath)) { New-Item -ItemType Directory -Force -Path $logP
 # --- Import Utilities ---
 Import-Module "$scriptPath/UmeAiRTUtils.psm1" -Force
 $global:logFile = "$logPath/install.log"
+# Inherit verbosity from Phase1 via env var if not passed as a switch directly
+if (-not $v -and -not $vv -and $env:UMEAIRT_VERBOSITY) {
+    $envLevel = [int]$env:UMEAIRT_VERBOSITY
+    if ($envLevel -ge 2) { $vv = $true } elseif ($envLevel -ge 1) { $v = $true }
+}
+$global:Verbosity = if ($vv) { 2 } elseif ($v) { 1 } else { 0 }
 $global:hasGpu = Test-NvidiaGpu
 
 #===========================================================================
