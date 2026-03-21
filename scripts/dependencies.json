@@ -82,8 +82,7 @@
   "files": {
     "comfy_settings": {
       "url": "https://raw.githubusercontent.com/UmeAiRT/ComfyUI-Auto_installer/main/scripts/comfy.settings.json",
-      "destination": "user/default/comfy.settings.json",
-      "sha256": "81DF395940A043D28E7A3AA290F1DFE804D091B8E5D0EB3CE20735A27551A2DF"
+      "destination": "user/default/comfy.settings.json"
     },
     "custom_nodes_csv": {
       "url": "https://github.com/UmeAiRT/ComfyUI-Auto_installer/raw/main/scripts/custom_nodes.csv",
