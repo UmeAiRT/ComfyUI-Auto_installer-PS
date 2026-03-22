@@ -16,16 +16,20 @@
     Verbose mode: show [INFO] messages and command output on success.
 .PARAMETER vv
     Extra-verbose mode: all of -v, plus print each command line before running it.
+.PARAMETER BootstrapOnly
+    Download all scripts fresh from the configured source and exit without running the update.
+    Use this to repair a bit-rotted install before running the full update.
 #>
 
 param(
-    [string]$InstallPath  = ((Split-Path -Path $PSScriptRoot -Parent).Replace('\', '/')),
-    [string]$SnapshotPath = "",
-    [string]$GhUser       = "",   # empty = read from config
-    [string]$GhRepoName   = "",
-    [string]$GhBranch     = "",
-    [switch]$v,                   # -v  : show [INFO] messages + command output on success
-    [switch]$vv                   # -vv : all of -v + print each command line before running
+    [string]$InstallPath    = ((Split-Path -Path $PSScriptRoot -Parent).Replace('\', '/')),
+    [string]$SnapshotPath   = "",
+    [string]$GhUser         = "",   # empty = read from config
+    [string]$GhRepoName     = "",
+    [string]$GhBranch       = "",
+    [switch]$v,                     # -v  : show [INFO] messages + command output on success
+    [switch]$vv,                    # -vv : all of -v + print each command line before running
+    [switch]$BootstrapOnly          # download fresh scripts and exit; run again to update
 )
 
 #===========================================================================
@@ -51,7 +55,54 @@ $dependenciesFile = "$scriptPath/dependencies.json"
 
 if (-not (Test-Path $logPath)) { New-Item -ItemType Directory -Force -Path $logPath | Out-Null }
 
-# --- Helper Functions ---
+# --- Inline config reader (no module dependency — runs before bootstrap) ---
+function _ReadCfgValue {
+    param([string]$File, [string]$Key)
+    if (-not (Test-Path $File)) { return "" }
+    try {
+        $j = Get-Content $File -Raw | ConvertFrom-Json
+        if ($j.PSObject.Properties[$Key] -and $j.$Key) { return [string]$j.$Key }
+    } catch {}
+    return ""
+}
+
+if (-not $GhUser) {
+    foreach ($f in @("$InstallPath/umeairt-user-config.json", "$InstallPath/repo-config.json")) {
+        if (-not $GhUser)     { $GhUser     = _ReadCfgValue $f "gh_user" }
+        if (-not $GhRepoName) { $GhRepoName = _ReadCfgValue $f "gh_reponame" }
+        if (-not $GhBranch)   { $GhBranch   = _ReadCfgValue $f "gh_branch" }
+    }
+    if (-not $GhUser)     { $GhUser     = "UmeAiRT" }
+    if (-not $GhRepoName) { $GhRepoName = "ComfyUI-Auto_installer" }
+    if (-not $GhBranch)   { $GhBranch   = "main" }
+}
+
+# --- Bootstrap: download fresh scripts BEFORE importing module ---
+$bootstrapUrl    = "https://raw.githubusercontent.com/$GhUser/$GhRepoName/$GhBranch/scripts/Bootstrap-Downloader.ps1"
+$bootstrapScript = "$($PSScriptRoot.Replace('\','/'))/Bootstrap-Downloader.ps1"
+Write-Host "[INFO] Updating scripts from $GhUser/$GhRepoName @ $GhBranch..." -ForegroundColor Cyan
+try {
+    Invoke-WebRequest -Uri $bootstrapUrl -OutFile $bootstrapScript -UseBasicParsing -ErrorAction Stop
+    & $bootstrapScript -InstallPath $InstallPath -GhUser $GhUser -GhRepoName $GhRepoName -GhBranch $GhBranch
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[WARN] Bootstrap completed with download failures — some files may not be updated. Check logs/bootstrap.log." -ForegroundColor Yellow
+    } else {
+        Write-Host "[OK] All scripts are up-to-date." -ForegroundColor Green
+    }
+} catch {
+    Write-Host "[WARN] Bootstrap self-update failed: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "[WARN] Continuing with existing scripts." -ForegroundColor Yellow
+}
+
+if ($BootstrapOnly) {
+    Write-Host ""
+    Write-Host "[OK] Scripts refreshed from $GhUser/$GhRepoName @ $GhBranch." -ForegroundColor Green
+    Write-Host "     Run the updater again (without -BootstrapOnly) to proceed with the update." -ForegroundColor Cyan
+    Read-Host "Press Enter to exit."
+    exit 0
+}
+
+# --- Import module (now guaranteed fresh from bootstrap above) ---
 Import-Module "$($PSScriptRoot.Replace('\','/'))/UmeAiRTUtils.psm1" -Force
 Invoke-LogRotation "$logPath/update.log"
 Invoke-LogRotation "$logPath/bootstrap.log"
@@ -105,36 +156,6 @@ if (-not (Test-Path $userConfigFile) -and (Test-Path $legacyConfigFile)) {
     } catch {
         Write-Log "WARNING: Migration failed: $($_.Exception.Message). Falling back to repo-config.json." -Color Yellow
     }
-}
-
-# --- Resolve fork config: CLI args take precedence over config file ---
-if (-not $GhUser) {
-    $cfgLines = Read-UserConfig `
-        -UserConfigFile "$InstallPath/umeairt-user-config.json" `
-        -RepoConfigFile "$InstallPath/repo-config.json"
-    $cfg = @{}
-    $cfgLines | ForEach-Object {
-        $parts = $_ -split '=', 2
-        if ($parts.Count -eq 2) { $cfg[$parts[0].Trim()] = $parts[1].Trim() }
-    }
-    $GhUser = $cfg.GhUser; $GhRepoName = $cfg.GhRepoName; $GhBranch = $cfg.GhBranch
-}
-
-# --- Bootstrap self-update ---
-$bootstrapUrl    = "https://raw.githubusercontent.com/$GhUser/$GhRepoName/$GhBranch/scripts/Bootstrap-Downloader.ps1"
-$bootstrapScript = "$($PSScriptRoot.Replace('\','/'))/Bootstrap-Downloader.ps1"
-Write-Host "[INFO] Updating bootstrap and all scripts ($GhUser/$GhRepoName @ $GhBranch)..." -ForegroundColor Cyan
-try {
-    Invoke-WebRequest -Uri $bootstrapUrl -OutFile $bootstrapScript -UseBasicParsing -ErrorAction Stop
-    & $bootstrapScript -InstallPath $InstallPath -GhUser $GhUser -GhRepoName $GhRepoName -GhBranch $GhBranch
-    if ($LASTEXITCODE -ne 0) {
-        Write-Log "WARNING: Bootstrap completed with download failures — some files may not be updated. Check logs/bootstrap.log." -Color Yellow
-    } else {
-        Write-Host "[OK] All scripts are up-to-date." -ForegroundColor Green
-    }
-} catch {
-    Write-Host "[WARN] Bootstrap self-update failed: $($_.Exception.Message)" -ForegroundColor Yellow
-    Write-Host "[WARN] Continuing with existing scripts." -ForegroundColor Yellow
 }
 
 # --- Load dependencies.json after bootstrap so we always use the freshly-downloaded version ---
