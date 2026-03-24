@@ -77,7 +77,7 @@ $loraChoice = Read-UserChoice -Prompt "Do you want to download UmeAiRT LoRAs?" -
 # --- Download Process ---
 Write-Log "Starting downloads based on your choices..." -Color Cyan
 
-$baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/models"
+$baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/models"
 $fluxDir = Join-Path $modelsPath "diffusion_models\FLUX"
 $clipDir = Join-Path $modelsPath "clip"
 $vaeDir = Join-Path $modelsPath "vae"

@@ -61,7 +61,7 @@ $ggufChoice = Read-UserChoice -Prompt "Do you want to download HiDream GGUF mode
 # --- Download Process ---
 Write-Log "Starting HiDream model downloads..." -Color Cyan
 
-$baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/models"
+$baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/models"
 $hidreamDiffDir = Join-Path $modelsPath "diffusion_models\HiDream"
 $hidreamUnetDir = Join-Path $modelsPath "unet\HiDream"
 

@@ -76,7 +76,7 @@ Scripts use `$global:` variables for cross-function communication:
 Model downloads are **procedural** — no structured metadata objects.
 Each download script calls `Save-File -Uri <url> -OutFile <path>` directly based on
 user menu choices. URLs are hardcoded string literals, not data-driven from a config file.
-Models are hosted on HuggingFace under `huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/models/`.
+Models are hosted on HuggingFace under `huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/models/`.
 
 Model directory structure under `InstallRoot/models/`:
 ```

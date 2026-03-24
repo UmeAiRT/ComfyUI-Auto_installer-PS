@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Phase 2 of the ComfyUI Auto-Installer (Environment Setup & Dependencies).
 .DESCRIPTION
@@ -424,7 +424,7 @@ else {
 # --- Nunchaku Configuration Section ---
 
 # 1. Define variables
-$JsonUrl = "https://raw.githubusercontent.com/UmeAiRT/ComfyUI-Auto_installer/main/scripts/nunchaku_versions.json" 
+$JsonUrl = "https://raw.githubusercontent.com/UmeAiRT/ComfyUI-Auto_installer-PS/main/scripts/nunchaku_versions.json" 
 $TargetDir = "$comfyPath\custom_nodes\ComfyUI-nunchaku"
 $TargetFile = "$TargetDir\nunchaku_versions.json"
 

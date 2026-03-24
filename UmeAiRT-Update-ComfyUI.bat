@@ -29,7 +29,7 @@ set "RepoConfigFile=%InstallPath%\repo-config.json"
 
 :: Default values for GitHub repo source
 set "GhUser=UmeAiRT"
-set "GhRepoName=ComfyUI-Auto_installer"
+set "GhRepoName=ComfyUI-Auto_installer-PS"
 set "GhBranch=main"
 
 :: Check for repo-config.json and read custom values if present

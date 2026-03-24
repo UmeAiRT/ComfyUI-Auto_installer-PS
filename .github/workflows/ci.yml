@@ -1,0 +1,149 @@
+name: CI — Code Quality & Link Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - '*.bat'
+      - '.github/**'
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── PSScriptAnalyzer Lint ───────────────────────────────────────
+  lint:
+    name: PSScriptAnalyzer Lint
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          $results = Invoke-ScriptAnalyzer -Path ./scripts -Recurse -Settings @{
+            Severity = @('Error', 'Warning')
+            ExcludeRules = @(
+              'PSAvoidUsingWriteHost'        # We use Write-Host intentionally for console UI
+              'PSUseShouldProcessForStateChangingFunctions'
+              'PSAvoidGlobalVars'            # Architectural pattern for logging across module boundaries
+              'PSUseDeclaredVarsMoreThanAssignments'  # False positives on module-scoped variables
+            )
+          }
+          if ($results) {
+            $results | Format-Table -AutoSize
+            Write-Error "PSScriptAnalyzer found $($results.Count) issue(s)."
+            exit 1
+          } else {
+            Write-Host "✅ No issues found." -ForegroundColor Green
+          }
+
+  # ── Security Checks ─────────────────────────────────────────────
+  security:
+    name: Security Audit
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+
+      - name: Check for Invoke-Expression usage
+        shell: pwsh
+        run: |
+          $iexFindings = Select-String -Path ./scripts/*.ps1,./scripts/*.psm1 -Pattern 'Invoke-Expression' -SimpleMatch
+          if ($iexFindings) {
+            Write-Warning "⚠️  Invoke-Expression found (potential code injection risk):"
+            $iexFindings | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
+          } else {
+            Write-Host "✅ No Invoke-Expression usage found." -ForegroundColor Green
+          }
+
+      - name: Check for non-HTTPS URLs
+        shell: pwsh
+        run: |
+          $httpFindings = Select-String -Path ./scripts/*.ps1,./scripts/*.psm1,./scripts/*.json -Pattern 'http://' -SimpleMatch
+          if ($httpFindings) {
+            Write-Error "❌ Non-HTTPS URLs found:"
+            $httpFindings | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+            exit 1
+          } else {
+            Write-Host "✅ All URLs use HTTPS." -ForegroundColor Green
+          }
+
+  # ── JSON Validation ─────────────────────────────────────────────
+  json-validate:
+    name: Validate JSON Files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON syntax
+        shell: pwsh
+        run: |
+          $jsonFiles = @(
+            'scripts/dependencies.json',
+            'scripts/snapshot.json',
+            'scripts/nunchaku_versions.json',
+            'scripts/comfy.settings.json'
+          )
+          $failed = $false
+          foreach ($file in $jsonFiles) {
+            if (Test-Path $file) {
+              try {
+                Get-Content -Raw $file | ConvertFrom-Json | Out-Null
+                Write-Host "✅ $file — valid" -ForegroundColor Green
+              } catch {
+                Write-Host "❌ $file — INVALID: $($_.Exception.Message)" -ForegroundColor Red
+                $failed = $true
+              }
+            } else {
+              Write-Host "⚠️  $file — not found (skipped)" -ForegroundColor Yellow
+            }
+          }
+          if ($failed) { exit 1 }
+
+  # ── URL Accessibility Check ─────────────────────────────────────
+  url-check:
+    name: Verify Download URLs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check URLs in dependencies.json
+        shell: pwsh
+        run: |
+          $deps = Get-Content -Raw scripts/dependencies.json | ConvertFrom-Json
+          $urls = @()
+
+          # Collect URLs from files section
+          foreach ($prop in $deps.files.PSObject.Properties) {
+            if ($prop.Value.url) { $urls += $prop.Value.url }
+          }
+
+          # Collect URLs from wheels
+          foreach ($wheel in $deps.pip_packages.wheels) {
+            if ($wheel.url) { $urls += $wheel.url }
+          }
+
+          # Check each URL with HEAD request
+          $failed = $false
+          foreach ($url in $urls) {
+            try {
+              $response = Invoke-WebRequest -Uri $url -Method Head -UseBasicParsing -TimeoutSec 15 -ErrorAction Stop
+              Write-Host "✅ [$($response.StatusCode)] $url" -ForegroundColor Green
+            } catch {
+              Write-Host "❌ FAILED: $url — $($_.Exception.Message)" -ForegroundColor Red
+              $failed = $true
+            }
+          }
+          if ($failed) { exit 1 }

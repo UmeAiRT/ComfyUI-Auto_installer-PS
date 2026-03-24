@@ -79,7 +79,7 @@ $upscalerChoice = Read-UserChoice -Prompt "Do you want to download RealESRGAN Up
 # --- Download Process ---
 Write-Log "Starting Z-IMAGE Turbo model downloads..." -Color Cyan
 
-$baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/models"
+$baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/models"
 $esrganUrl = "https://huggingface.co/spaces/Marne/Real-ESRGAN/resolve/main"
 
 $ZImgUnetDir = Join-Path $modelsPath "unet\Z-IMG"

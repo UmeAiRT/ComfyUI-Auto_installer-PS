@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Phase 1 of the ComfyUI Auto-Installer.
 .DESCRIPTION
@@ -360,7 +360,7 @@ else {
                         
                         # POST-INSTALLATION REDETECTION (Manual path check)
                         $possiblePaths = @(
-                            "C:\Program Files\Python312\python.exe",
+                            "C:\Program Files\Python313\python.exe",
                             "$env:LOCALAPPDATA\Programs\Python\Python313\python.exe"
                         )
                         

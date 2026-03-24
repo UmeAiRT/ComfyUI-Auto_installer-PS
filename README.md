@@ -1,4 +1,16 @@
-# UmeAiRT's ComfyUI Auto-Installer
+> [!IMPORTANT]
+> ## 🚀 Une nouvelle version Python est disponible !
+>
+> Ce projet (PowerShell) est maintenu en mode **legacy / maintenance uniquement**.
+> Une réécriture complète en Python est disponible avec :
+> - ✅ Support multi-plateforme (Windows, Linux, macOS)
+> - ✅ Interface TUI moderne
+> - ✅ CI/CD, tests automatisés, Docker
+> - ✅ Meilleure gestion des dépendances (uv)
+>
+> 👉 **[Passer à la version Python](https://github.com/UmeAiRT/ComfyUI-Auto_installer-Python)**
+
+# UmeAiRT's ComfyUI Auto-Installer (Legacy PowerShell)
 
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-Windows%2010%2F11-lightgrey.svg)

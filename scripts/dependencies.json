@@ -27,11 +27,11 @@
     "wheels": [
       {
         "name": "nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-win_amd64",
-        "url": "https://github.com/nunchaku-ai/nunchaku/releases/download/v1.2.1/nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-win_amd64.whl"
+        "url": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-win_amd64.whl"
       },
       {
         "name": "insightface-0.7.3-cp313-cp313-win_amd64",
-        "url": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/insightface-0.7.3-cp313-cp313-win_amd64.whl"
+        "url": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/insightface-0.7.3-cp313-cp313-win_amd64.whl"
       }
     ],
     "standard": [
@@ -48,18 +48,17 @@
 	  "segment_anything",
 	  "gguf",
 	  "deepdiff",
-	  "pynvml",
 	  "py-cpuinfo"
     ],
     "git_repos": []
   },
   "files": {
     "comfy_settings": {
-      "url": "https://github.com/UmeAiRT/ComfyUI-Auto_installer/raw/main/scripts/comfy.settings.json",
+      "url": "https://github.com/UmeAiRT/ComfyUI-Auto_installer-PS/raw/main/scripts/comfy.settings.json",
       "destination": "user/default/comfy.settings.json"
     },
     "custom_nodes_csv": {
-        "url": "https://github.com/UmeAiRT/ComfyUI-Auto_installer/raw/main/scripts/custom_nodes.csv",
+        "url": "https://github.com/UmeAiRT/ComfyUI-Auto_installer-PS/raw/main/scripts/custom_nodes.csv",
         "destination": "scripts/custom_nodes.csv"
     },
     "installer_script": {

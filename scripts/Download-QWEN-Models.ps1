@@ -56,7 +56,7 @@ $lightChoice = Read-UserChoice -Prompt "Do you want to download QWEN Lightning L
 # --- Download Process ---
 Write-Log "Starting QWEN model downloads..." -Color Cyan
 
-$baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/models"
+$baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/models"
 $QWENDiffDir = Join-Path $modelsPath "diffusion_models\QWEN"
 $QWENUnetDir = Join-Path $modelsPath "unet\QWEN"
 $QWENLoRADir = Join-Path $modelsPath "loras\QWEN"

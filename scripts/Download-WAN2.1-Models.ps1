@@ -59,7 +59,7 @@ $vaceGgufChoice = Read-UserChoice -Prompt "Do you want to download WAN VACE GGUF
 # --- Download Process ---
 Write-Log "Starting WAN model downloads..." -Color Cyan
 
-$baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/models"
+$baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/models"
 $wanDiffDir = Join-Path $modelsPath "diffusion_models\WAN"
 $wanUnetDir = Join-Path $modelsPath "unet\WAN"
 $clipDir = Join-Path $modelsPath "clip"

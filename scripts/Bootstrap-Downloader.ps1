@@ -10,7 +10,7 @@
 .PARAMETER GhUser
     The GitHub username (default: "UmeAiRT").
 .PARAMETER GhRepoName
-    The GitHub repository name (default: "ComfyUI-Auto_installer").
+    The GitHub repository name (default: "ComfyUI-Auto_installer-PS").
 .PARAMETER GhBranch
     The GitHub branch to use (default: "main").
 .PARAMETER SkipSelf
@@ -20,7 +20,7 @@
 param(
     [string]$InstallPath,
     [string]$GhUser = "UmeAiRT",
-    [string]$GhRepoName = "ComfyUI-Auto_installer",
+    [string]$GhRepoName = "ComfyUI-Auto_installer-PS",
     [string]$GhBranch = "main",
     [switch]$SkipSelf = $false
 )

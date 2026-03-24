@@ -55,7 +55,7 @@ $ggufChoice = Read-UserChoice -Prompt "Do you want to download LTXV GGUF models?
 # --- Download Process ---
 Write-Log "Starting LTX-2 model downloads..." -Color Cyan
 
-$baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/models"
+$baseUrl = "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/models"
 $ltxvChkptDir = Join-Path $modelsPath "checkpoints\LTX2"
 $difftDir = Join-Path $modelsPath "diffusion_models"
 $ltxvUnetDir = Join-Path $modelsPath "unet\LTX2"
