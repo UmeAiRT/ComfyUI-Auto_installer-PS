@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-24 | Source: *.bat, scripts/*.ps1 -->
+<!-- Generated: 2026-03-25 | Source: *.bat, scripts/*.ps1 -->
 
 # Frontend / User Interface Patterns
 

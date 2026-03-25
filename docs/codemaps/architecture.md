@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-24 | Source files: 24 | Token estimate: ~1100 -->
+<!-- Generated: 2026-03-25 | Source files: 24 | Token estimate: ~1200 -->
 
 # Architecture
 
@@ -58,21 +58,27 @@ No hardcoded upstream URLs in any entry point — all use resolved fork coordina
 - .whl installs: nunchaku, insightface (URLs from dependencies.json, HF Assets repo)
 - Optional model packs: Y/N `Read-Host` per pack (8 packs)
 
-## ComfyUI Launch Flow (`Start-ComfyUI.ps1`, 213 lines)
+## ComfyUI Launch Flow (`Start-ComfyUI.ps1`, 249 lines)
 
 Unified launcher for both standard and low-VRAM modes.
 
 **Execution flow:**
-1. Detect install type (venv or conda) from `scripts/install_type` file or directory presence
-2. Activate appropriate Python environment (venv Activate.ps1 or conda)
-3. Read `umeairt-user-config.json` if present for network config
-4. Validate config: gh_user/gh_reponame/gh_branch (alphanumeric + hyphens/underscores)
-5. Validate network config: listen_enabled flag, listen_address (IPv4/IPv6), listen_port (1-65535)
-6. Build network args: `--listen <address>` + optional `--port` (only if not default 8188)
-7. Build VRAM args: if -LowVRAM flag, add `--disable-smart-memory --lowvram --fp8_e4m3fn-text-enc`
-8. Launch: `python main.py --use-sage-attention --auto-launch <network-args> <vram-args>`
+1. Set Python isolation env vars (`PYTHONPATH=''`, `PYTHONNOUSERSITE=1`, `PYTHONUTF8=1`)
+2. **MSVC toolchain activation (Triton unicode-path workaround):** locate `vswhere.exe`, run
+   `vcvarsall.bat amd64`, capture environment via `cmd /c "... && set"`, replay into PS session,
+   set `CC=cl.exe` so Triton's `build.py` uses MSVC instead of bundled `tcc.exe`.
+   Falls back with a warning if MSVC is not installed — `tcc.exe` will fail on non-ASCII paths.
+3. Detect install type (venv or conda) from `scripts/install_type` file or directory presence
+4. Activate appropriate Python environment (venv Activate.ps1 or conda)
+5. Read `umeairt-user-config.json` if present for network config
+6. Validate config: gh_user/gh_reponame/gh_branch (alphanumeric + hyphens/underscores)
+7. Validate network config: listen_enabled flag, listen_address (IPv4/IPv6), listen_port (1-65535)
+8. Build network args: `--listen <address>` + optional `--port` (only if not default 8188)
+9. Build VRAM args: if -LowVRAM flag, add `--disable-smart-memory --lowvram --fp8_e4m3fn-text-enc`
+10. Launch: `python main.py --use-sage-attention --auto-launch <network-args> <vram-args>`
 
 **Security:** listen_address validation prevents IP injection; warns if exposing 0.0.0.0 or ::
+**Unicode paths:** MSVC handles non-ASCII install paths (e.g. Japanese folder names); tcc.exe cannot.
 
 ## Junction Architecture
 

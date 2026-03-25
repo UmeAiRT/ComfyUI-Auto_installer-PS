@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-24 | Source files: 24 | Token estimate: ~1200 -->
+<!-- Generated: 2026-03-25 | Source files: 24 | Token estimate: ~1200 -->
 
 # Backend Scripts
 
@@ -78,10 +78,11 @@ Resolves and normalises a path to forward slashes.
 
 ---
 
-## Install Entry Point (`scripts/Install-ComfyUI.ps1`, 178 lines)
+## Install Entry Point (`scripts/Install-ComfyUI.ps1`, 182 lines)
 
 Reads config, sets up early logging, runs bootstrap, persists fork config.
 Default `GhRepoName`: `ComfyUI-Auto_installer-PS`.
+Accepts `-v` / `-vv` verbosity switches; forwards them to Phase 1 via splatting.
 
 ### Flow
 1. Inline `_RotateLog`/`_AppendLog` helpers (psm1 not yet loaded)
@@ -91,7 +92,7 @@ Default `GhRepoName`: `ComfyUI-Auto_installer-PS`.
 5. Download `Bootstrap-Downloader.ps1` from `raw.githubusercontent.com`
 6. Run bootstrap (`-SkipSelf`)
 7. Persist resolved fork config to `umeairt-user-config.json` (merge with existing keys)
-8. Launch Phase 1
+8. Build `$verbSplat` hash from `-v`/`-vv` params; launch Phase 1 with splat forwarding
 
 ---
 

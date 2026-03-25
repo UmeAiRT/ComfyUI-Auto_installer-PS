@@ -10,6 +10,9 @@ __pycache__/
 umeairt-user-config.json
 scripts/user-snapshot.json
 
+# Local analysis reports (machine-specific, never commit)
+.reports/
+
 # Claude Code (keep CLAUDE.md and settings.json, ignore the rest)
 .claude/rules/
 .claude/plans/
