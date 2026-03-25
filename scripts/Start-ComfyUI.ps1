@@ -41,6 +41,42 @@ $env:PYTHONNOUSERSITE = '1'
 $env:PYTHONUTF8       = '1'
 
 # ============================================================================
+# Section 1.5: Triton compiler setup (unicode-path workaround)
+# ============================================================================
+# Triton's bundled tcc.exe cannot handle non-ASCII characters in library paths
+# (e.g. Japanese folder names like "ろく"). When MSVC (cl.exe) is available,
+# set CC=cl.exe so Triton uses MSVC-style compilation instead — MSVC handles
+# unicode paths correctly via Windows UTF-16 APIs.
+
+$vswherePath = Join-Path "${env:ProgramFiles(x86)}" 'Microsoft Visual Studio\Installer\vswhere.exe'
+if (Test-Path $vswherePath) {
+    $vsInstallPath = (& $vswherePath -latest -prerelease `
+        -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+        -property installationPath 2>$null) | Select-Object -First 1
+    if ($vsInstallPath) {
+        $vcvarsall = Join-Path $vsInstallPath 'VC\Auxiliary\Build\vcvarsall.bat'
+        if (Test-Path $vcvarsall) {
+            Write-Info 'Activating MSVC toolchain (Triton unicode-path workaround)...'
+            # Source vcvarsall.bat into this PowerShell session by capturing its env output
+            $envLines = cmd /c "`"$vcvarsall`" amd64 >nul 2>&1 && set" 2>$null
+            foreach ($line in $envLines) {
+                if ($line -match '^([^=]+)=(.+)$') {
+                    [System.Environment]::SetEnvironmentVariable($Matches[1], $Matches[2], 'Process')
+                }
+            }
+            $clExe = Get-Command cl.exe -ErrorAction SilentlyContinue
+            if ($clExe) {
+                $env:CC = $clExe.Source
+                Write-Info "Triton will compile kernels with MSVC: $($clExe.Source)"
+            }
+        }
+    }
+}
+if (-not $env:CC) {
+    Write-Warn 'MSVC (cl.exe) not found. Triton will use bundled tcc.exe — may fail if install path contains non-ASCII characters.'
+}
+
+# ============================================================================
 # Section 2: Environment detection and activation
 # ============================================================================
 Write-Info 'Checking installation type...'
