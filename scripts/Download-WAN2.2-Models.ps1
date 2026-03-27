@@ -89,8 +89,8 @@ if ($doDownload) {
 if ($T2VChoice -ne 'G') {
     Write-Log "Downloading T2V Models..."
     if ($T2VChoice -in 'A', 'F') {
-        Save-FileCollecting -Uri "$baseUrl/diffusion_models/WAN/wan2.2-t2v-high-noise-14b-bf16.safetensors" -OutFile (Join-Path $wanDiffDir "wan2.2-t2v-high-noise-14b-bf16.safetensors")
-        Save-FileCollecting -Uri "$baseUrl/diffusion_models/WAN/wan2.2-t2v-low-noise-14b-bf16.safetensors" -OutFile (Join-Path $wanDiffDir "wan2.2-t2v-low-noise-14b-bf16.safetensors")
+        Save-FileCollecting -Uri "$baseUrl/diffusion_models/WAN/wan2.2-t2v-high-noise-14b-fp16.safetensors" -OutFile (Join-Path $wanDiffDir "wan2.2-t2v-high-noise-14b-fp16.safetensors")
+        Save-FileCollecting -Uri "$baseUrl/diffusion_models/WAN/wan2.2-t2v-low-noise-14b-fp16.safetensors" -OutFile (Join-Path $wanDiffDir "wan2.2-t2v-low-noise-14b-fp16.safetensors")
     }
     if ($T2VChoice -in 'B', 'F') {
         Save-FileCollecting -Uri "$baseUrl/diffusion_models/WAN/wan2.2-t2v-high-noise-14b-fp8_scaled.safetensors" -OutFile (Join-Path $wanDiffDir "wan2.2-t2v-high-noise-14b-fp8_scaled.safetensors")
