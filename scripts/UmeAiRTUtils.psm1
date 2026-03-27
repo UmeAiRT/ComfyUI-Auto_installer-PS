@@ -334,6 +334,7 @@ function Save-File {
         }
         catch {
             Write-Log "ERROR: Download failed for '$Uri'. Both aria2c and PowerShell failed. Error: $($_.Exception.Message)" -Color Red
+            Remove-Item $OutFile -Force -ErrorAction SilentlyContinue
             throw "Download failed."
         }
     }
