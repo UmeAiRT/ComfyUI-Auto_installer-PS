@@ -1,0 +1,47 @@
+{
+  "_comment": [
+    "INSTRUCTIONS: Copy this file to 'umeairt-user-config.json' in the same folder.",
+    "This file will NEVER be overwritten by bootstrap or updates.",
+    "Do NOT commit umeairt-user-config.json — it is personal to your machine.",
+    "Leave any field as its default value (or remove it entirely) to use the built-in default."
+  ],
+
+  "_section_repository": "--- Fork / Repository Source ---",
+  "_comment_repository": [
+    "Override the GitHub repository that bootstrap downloads scripts from.",
+    "Useful if you are running a fork. Leave all three empty to use the upstream defaults.",
+    "Allowed characters: gh_user/gh_reponame = letters, numbers, hyphens, underscores.",
+    "                    gh_branch = letters, numbers, hyphens, underscores, dots, forward slashes."
+  ],
+  "gh_user": "",
+  "gh_reponame": "",
+  "gh_branch": "",
+
+  "_section_listen": "--- Network Listen Configuration ---",
+  "_comment_listen": [
+    "By default ComfyUI binds to 127.0.0.1 (localhost only) and is not reachable from other machines.",
+    "Set listen_enabled to true AND provide a listen_address to expose ComfyUI on additional interfaces.",
+    "",
+    "listen_address accepts a single IP or a comma-separated list, e.g.: '127.0.0.1,100.64.0.1'",
+    "This maps directly to ComfyUI's --listen flag, which supports comma-separated addresses natively.",
+    "",
+    "WARNING: Setting listen_address to '0.0.0.0' or '::' exposes ComfyUI to ALL network interfaces.",
+    "Only do this if you understand the implications and have appropriate firewall rules in place.",
+    "",
+    "listen_port: default is 8188. Change only if you need to run on a different port.",
+    "Ports below 1024 are privileged and may require elevated permissions."
+  ],
+  "listen_enabled": false,
+  "listen_address": "",
+  "listen_port": 8188,
+
+  "_section_snapshot": "--- Custom Node Snapshot ---",
+  "_comment_snapshot": [
+    "snapshot_path: optional path to a snapshot file to use during updates.",
+    "If set, skips the interactive save-before-update prompt and uses this file.",
+    "Leave empty to be prompted each time (recommended: saves current nodes first).",
+    "Use forward slashes or double backslashes in the path.",
+    "Example: 'C:/Backups/my-comfyui-snapshot.json'"
+  ],
+  "snapshot_path": ""
+}

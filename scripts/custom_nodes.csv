@@ -22,7 +22,7 @@ x-flux-comfyui,https://github.com/XLabs-AI/x-flux-comfyui.git,,requirements.txt
 ComfyUI-Detail-Daemon,https://github.com/Jonseed/ComfyUI-Detail-Daemon.git,,requirements.txt
 ComfyUI-TeaCache,https://github.com/welltop-cn/ComfyUI-TeaCache.git,,requirements.txt
 ComfyUI-Crystools,https://github.com/crystian/ComfyUI-Crystools.git,,requirements.txt
-ComfyUI-nunchaku,https://github.com/mit-han-lab/ComfyUI-nunchaku,,requirements.txt
+ComfyUI-nunchaku,https://github.com/nunchaku-tech/ComfyUI-nunchaku,,requirements.txt
 wlsh_nodes,https://github.com/wallish77/wlsh_nodes,,requirements.txt
 ComfyUI_essentials,https://github.com/cubiq/ComfyUI_essentials,,requirements.txt
 ComfyUI-wanBlockswap,https://github.com/orssorbit/ComfyUI-wanBlockswap,,

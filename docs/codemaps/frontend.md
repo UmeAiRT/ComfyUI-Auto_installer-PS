@@ -1,4 +1,4 @@
-<!-- Generated: 2026-02-15 | Source: *.bat, scripts/*.ps1 -->
+<!-- Generated: 2026-03-25 | Source: *.bat, scripts/*.ps1 -->
 
 # Frontend / User Interface Patterns
 
@@ -56,20 +56,6 @@ Enter your choice and press Enter: _
 ```
 Call: `Read-UserChoice -Prompt "..." -Choices @("A) fp16", "B) fp8", "C) All", "D) No") -ValidAnswers @("A", "B", "C", "D")`
 
-### Example: FLUX GGUF Models (line 68)
-```
-Do you want to download FLUX GGUF models?
-  A) Q8 (18GB VRAM)
-  B) Q6 (14GB VRAM)
-  C) Q5 (12GB VRAM)
-  D) Q4 (10GB VRAM)
-  E) Q3 (8GB VRAM)
-  F) Q2 (6GB VRAM)
-  G) All
-  H) No
-Enter your choice and press Enter: _
-```
-
 ## Input Pattern 3: Batch Menu (Download_models.bat)
 
 Numeric menu in batch via `set /p`:
@@ -108,7 +94,7 @@ GPU: NVIDIA GeForce RTX 4090
 VRAM: 24 GB
 Recommendation: fp8 or GGUF Q8
 ```
-Thresholds: >=30GB fp16, >=18GB fp8/Q8, >=16GB Q6, >=14GB Q5, >=12GB Q4, >=8GB Q3, <8GB Q2.
+Thresholds vary by model family (WAN2.2: >=40GB fp16, >=23GB fp8/Q8, >=16GB Q5, else Q3).
 
 ### ASCII Banner (Phase 1, lines 176-187)
 Displays UmeAiRT logo + "ComfyUI - Auto-Installer Version 4.3" on Phase 1 start.

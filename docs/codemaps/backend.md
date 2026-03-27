@@ -1,12 +1,17 @@
-<!-- Generated: 2026-02-15 | Source: scripts/*.ps1, scripts/*.psm1 -->
+<!-- Generated: 2026-03-27 | Source files: 26 | Token estimate: ~1400 -->
 
 # Backend Scripts
 
-## Shared Utilities (`scripts/UmeAiRTUtils.psm1`, 352 lines)
+## Shared Utilities (`scripts/UmeAiRTUtils.psm1`, 628 lines)
 
-7 exported functions used across all scripts:
+16 exported functions used across all scripts:
 
-### Write-Log (lines 15-75)
+### Invoke-LogRotation (line 15)
+Rotates log files, keeps N previous runs (default 3).
+- Renames `log` → `log.1` → `log.2` → `log.3`; deletes `.4+`
+- Called once per session entry point (Install, Update) before any writes
+
+### Write-Log (line 42)
 Dual-output logging: console (colored) + log file (timestamped).
 - Level -2: raw (no prefix)
 - Level 0: step header with `[Step N/M]`, yellow, `=` separators, increments `$global:currentStep`
@@ -15,94 +20,196 @@ Dual-output logging: console (colored) + log file (timestamped).
 - Level 3: `"      [INFO] "` prefix
 - Uses `$global:logFile`, `$global:currentStep`, `$global:totalSteps`
 
-### Invoke-AndLog (lines 77-130)
+### Invoke-AndLog (line 101)
 Runs external commands via `Invoke-Expression`, captures output to temp file, logs it.
 - On non-zero exit: logs error + throws (unless `-IgnoreErrors` switch)
 - On fatal catch: `Read-Host` pause + `exit 1`
 - Cleans up temp file in `finally` block
 
-### Save-File (lines 132-201)
+### Confirm-FileHash (line 151)
+Verifies SHA256 of a file. Deletes file and throws on mismatch.
+- Primary: `Get-FileHash -Algorithm SHA256`
+- Fallback: `System.Security.Cryptography.SHA256` (.NET, for powershell.exe compat)
+- Params: `$Path`, `$Expected`, `$Algorithm = 'SHA256'`
+
+### Confirm-Authenticode (line 187)
+Verifies Authenticode signature on Windows binaries. Deletes file and throws on failure.
+- Checks `Get-AuthenticodeSignature` status is 'Valid'
+- Checks signer certificate Subject contains `$ExpectedSubject`
+
+### Set-ManagerUseUv (line 212)
+Ensures `user/__manager/config.ini` has `use_uv = True`.
+- Creates config file/dir if missing; patches in-place if present
+
+### Save-File (line 240)
 Downloads files with aria2c primary, Invoke-WebRequest fallback.
-- Skips if file already exists (idempotent)
+- `-Force` switch: bypasses exists-check (used by Update for re-download)
+- Without `-Force`: skips if file exists, then verifies hash if `-ExpectedHash` provided
+- `-ExpectedHash`: SHA256 verification after download via `Confirm-FileHash`
 - aria2c path: `$env:LOCALAPPDATA\aria2\aria2c.exe` with flags `-x 16 -s 16 -k 1M`
 - Fallback: `Invoke-WebRequest` with TLS 1.2/1.3
+- Null guard on `$global:logFile` check before writing aria2c output to log
+- **Partial-file cleanup:** on innermost catch, `Remove-Item $OutFile -Force -ErrorAction SilentlyContinue` before re-throw — prevents re-runs from seeing truncated partial files as "already exists"
 
-### Read-UserChoice (lines 203-236)
+### Save-FileCollecting (line ~580)
+Wrapper around `Save-File` that catches errors and accumulates them in `$script:_dlErrors`
+instead of terminating. Allows all downloads to proceed; errors are surfaced at end via `Show-DownloadSummary`.
+
+### Show-DownloadSummary (line ~600)
+Prints a report of all collected download errors from `$script:_dlErrors`.
+If empty, prints "[OK] All downloads succeeded." If non-empty, prints each failed URI and
+a count, so re-runs know exactly what to retry.
+
+### Read-UserChoice (line 322)
 Interactive menu: displays prompt + choices array, loops until valid answer.
 - Returns uppercase string (e.g., "A", "B", "C")
 - Used by Download-*-Models.ps1 scripts for letter-based menus
 
-### Test-NvidiaGpu (lines 238-270)
+### Test-NvidiaGpu (line 357)
 Runs `nvidia-smi -L`, returns `$true` if "GPU 0:" found in output.
 
-### Get-GpuVramInfo (lines 272-313)
+### Get-GpuVramInfo (line 391)
 Queries `nvidia-smi --query-gpu=name,memory.total --format=csv,noheader,nounits`.
 Returns `[PSCustomObject]@{ GpuName = string; VramGiB = int }` or `$null`.
 
-### Test-PyVersion (lines 315-348)
+### Test-PyVersion (line 434)
 Runs `<Command> <Arguments> --version`, returns `$true` if output matches "Python 3.13".
 
-## Install Phase 1 (`scripts/Install-ComfyUI-Phase1.ps1`, 523 lines)
+### Read-UserConfig (line 469)
+Reads `gh_user`/`gh_reponame`/`gh_branch` from `umeairt-user-config.json` (preferred)
+or deprecated `repo-config.json` fallback. Validates each field with regex.
+Outputs 4 KEY=VALUE lines: `GhUser`, `GhRepoName`, `GhBranch`, `ConfigSource`.
+
+### ConvertTo-ForwardSlash (line 515)
+Converts backslashes to forward slashes in a path string.
+
+### Resolve-CleanPath (line 542)
+Resolves and normalises a path to forward slashes.
+
+---
+
+## Install Entry Point (`scripts/Install-ComfyUI.ps1`, 182 lines)
+
+Reads config, sets up early logging, runs bootstrap, persists fork config.
+Default `GhRepoName`: `ComfyUI-Auto_installer-PS`.
+Accepts `-v` / `-vv` verbosity switches; forwards them to Phase 1 via splatting.
 
 ### Flow
-1. Load dependencies.json, import UmeAiRTUtils
-2. If `-RunAdminTasks` flag: enable Long Paths registry + install VS Build Tools, then exit
-3. Otherwise: check if admin tasks needed, self-elevate via `Start-Process -Verb RunAs` if so
-4. Install type menu: `Read-Host` with `"1"` (Light/venv) or `"2"` (Full/Conda)
-5. Install aria2 (download accelerator) to `$env:LOCALAPPDATA\aria2\`
-6. Git detection: `Get-Command "git"`, auto-install prompt if missing (Y/N via `Read-Host`)
-7. **Light path**: detect Python 3.13 (`py -3.13` or `python`), auto-install if missing, create venv
-8. **Full path**: install Miniconda if missing, accept TOS, remove old env, `conda env create -f environment.yml`
-9. Generate `Launch-Phase2.ps1` (venv activate or conda-hook + activate)
-10. Launch Phase 2 in new window via `Start-Process powershell.exe`
+1. Inline `_RotateLog`/`_AppendLog` helpers (psm1 not yet loaded)
+2. Rotate `logs/install.log` and `logs/bootstrap.log`
+3. Read config via `Read-UserConfig` (if psm1 already on disk) or use defaults
+4. Validate fork params; log config source
+5. Download `Bootstrap-Downloader.ps1` from `raw.githubusercontent.com`
+6. Run bootstrap (`-SkipSelf`)
+7. Persist resolved fork config to `umeairt-user-config.json` (merge with existing keys)
+8. Build `$verbSplat` hash from `-v`/`-vv` params; launch Phase 1 with splat forwarding
+
+---
+
+## Install Phase 1 (`scripts/Install-ComfyUI-Phase1.ps1`, 634 lines)
+
+### Flow
+1. Load dependencies.json, import UmeAiRTUtils, set `$global:logFile = "$logPath/install.log"`
+2. Detect `$psExe` (pwsh vs powershell.exe) for all subprocess spawns
+3. If `-RunAdminTasks` flag: enable Long Paths registry + install VS Build Tools (SHA256 + Authenticode verified), then exit
+4. Otherwise: check if admin tasks needed, self-elevate via `Start-Process $psExe -Verb RunAs` if so
+5. Install type menu: `Read-Host` with `"1"` (Light/venv) or `"2"` (Full/Conda)
+6. Install aria2 (download accelerator) to `$env:LOCALAPPDATA\aria2\`
+7. Git detection: `Get-Command "git"`, auto-install prompt if missing (SHA256 + Authenticode verified)
+8. **Light path**: detect Python 3.13 (`py -3.13` or `python`), auto-install if missing (SHA256 + Authenticode verified), create venv
+9. **Full path**: install Miniconda if missing (SHA256 + Authenticode verified), accept TOS, remove old env, `conda env create -f environment.yml`
+10. uv install: check `Get-Command uv` (system-wide) first; download only if absent; add local bin to PATH only if not system-wide
+11. Generate `Launch-Phase2.ps1` (venv activate or conda-hook + activate)
+12. Launch Phase 2 in new window via `Start-Process $psExe`
 
 ### Key Variables
-- `$installType`: "Light" or "Full" (derived from user choice "1" or "2")
-- `$pythonCommand` / `$pythonArgs`: detected Python executable (e.g., "py" + "-3.13")
-- `$condaPath`: `$env:LOCALAPPDATA\Miniconda3`
+- `$psExe`: "pwsh" or "powershell.exe" (detected at runtime)
+- `$installType`: "Light" or "Full"
+- `$pythonCommand` / `$pythonArgs`: detected Python executable
 
-## Install Phase 2 (`scripts/Install-ComfyUI-Phase2.ps1`, 510 lines)
+---
+
+## Install Phase 2 (`scripts/Install-ComfyUI-Phase2.ps1`, 523 lines)
 
 ### Flow
-1. UTF-8 encoding setup (chcp 65001 + console + Python env vars)
-2. Load dependencies.json, import UmeAiRTUtils, detect GPU
-3. Environment detection: read `scripts/install_type` file to resolve `$pythonExe`
-4. Git long paths config
-5. Clone ComfyUI
-6. Junction architecture: 5 folders (custom_nodes, models, output, input, user)
-7. Core deps: ninja, pip/wheel upgrade, torch+cu130+xformers, ComfyUI requirements
-8. Standard pip packages (facexlib, cython, onnxruntime-gpu, etc.)
-9. Custom nodes: ComfyUI-Manager clone → cm-cli.py restore-snapshot or CSV fallback
-10. UmeAiRT-Sync node install
-11. MagCache hotfix (line 13 patch)
-12. .whl installs (nunchaku, insightface)
-13. Triton/SageAttention: DazzleML (venv) or manual pip (Conda)
-14. Nunchaku config + ComfyUI settings download
-15. Optional model packs: Y/N `Read-Host` loop for each of 8 packs
+1. UTF-8 encoding setup; load dependencies.json; import UmeAiRTUtils; detect GPU
+2. Set `$global:logFile = "$logPath/install.log"` (appends to Phase 1 log)
+3. Inherit `$psExe` from Phase 1 environment
+4. Git long paths config; clone ComfyUI
+5. Junction architecture: 5 folders (custom_nodes, models, output, input, user)
+6. Core deps: ninja, pip/wheel upgrade, torch+cu130+xformers, ComfyUI requirements
+7. Standard pip packages; .whl installs (nunchaku, insightface) with SHA256 verification
+8. Custom nodes: ComfyUI-Manager clone → cm-cli.py restore-snapshot or CSV fallback
+9. UmeAiRT-Sync node install; MagCache hotfix (line 13 patch)
+10. Triton/SageAttention: DazzleML installer (venv) or manual pip (Conda)
+11. Nunchaku config URL from `dependencies.files.nunchaku_versions.url`; ComfyUI settings download
+12. Optional model packs: Y/N loop for 8 packs
 
-### Important: `$optimalParallelJobs`
-Calculated at line 103-104 (`Floor(CPU_CORES * 3/4)`) but **never used**.
-No `Start-Job` or parallel execution pattern exists in this script.
-All operations are sequential.
+All pip calls use `uv pip install --python "$pythonExe"` (no pip-only flags).
 
-## Update Script (`scripts/Update-ComfyUI.ps1`, 171 lines)
+---
 
-Sequential update: git pull core → update Manager → restore-snapshot → update all nodes → DazzleML upgrade.
-Same environment detection pattern as Phase 2.
+## Update Script (`scripts/Update-ComfyUI.ps1`, 448 lines)
 
-## Bootstrap Downloader (`scripts/Bootstrap-Downloader.ps1`, 94 lines)
+### Parameters
+- `$SnapshotPath`: optional path to a specific snapshot file
+- `$ResumeFromStep`: skip to step N (valid: 1-3, default 1)
+- `$BootstrapOnly`: download scripts and exit
+- `-v` / `-vv`: verbosity levels
 
-Downloads all scripts + configs from GitHub via `Invoke-WebRequest`.
-Parameters: `$InstallPath`, `$GhUser`, `$GhRepoName`, `$GhBranch`, `$SkipSelf`.
-File list is hardcoded: 12 PS1 scripts + 4 config files + 4 bat launchers.
+### Flow
+1. Define `$dependenciesFile` path (not loaded yet)
+2. Import UmeAiRTUtils; rotate `update.log` and `bootstrap.log`; set `$global:logFile`
+3. **Migrate** `repo-config.json` → `umeairt-user-config.json` (one-time, old installs only)
+4. Read fork config via `Read-UserConfig`
+5. Bootstrap self-update: download fresh `Bootstrap-Downloader.ps1` from `raw.githubusercontent.com`, run with `-SkipSelf`
+6. **Load `dependencies.json` from disk** (after bootstrap — always uses freshly downloaded version)
+7. Environment detection: read `scripts/install_type`, resolve `$pythonExe`
+8. Validate `$ResumeFromStep` (1-3); pre-seed `$global:currentStep = $ResumeFromStep - 1`
+9. **Step 1** (if `$ResumeFromStep -le 1`): ComfyUI git pull + requirements; ComfyUI-Manager update; snapshot resolve (5-priority chain) + cm-cli restore + update all
+10. **Step 2** (if `$ResumeFromStep -le 2`): ComfyUI-nunchaku cleanup (remove corrupted non-git dirs); DazzleML installer `--upgrade`
+11. **Step 3**: Re-pin managed wheels via `uv pip install --force-reinstall`
+
+### Snapshot Priority Chain
+1. `-SnapshotPath` CLI param
+2. `snapshot_path` key in `umeairt-user-config.json`
+3. Interactive prompt → auto-save to `scripts/user-snapshot.json`
+4. Pre-existing `scripts/user-snapshot.json`
+5. Upstream `scripts/snapshot.json` (fallback)
+
+---
+
+## Bootstrap Downloader (`scripts/Bootstrap-Downloader.ps1`, 166 lines)
+
+Downloads all scripts + configs from `raw.githubusercontent.com` via `Invoke-WebRequest`.
+Parameters: `$InstallPath`, `$GhUser`, `$GhRepoName`, `$GhBranch`, `-v`/`-vv`.
+Reads fork config from `umeairt-user-config.json` / `repo-config.json` if params empty.
+File list: 15 PS1 scripts + 6 bat launchers + 4 config files.
+Self-update: includes itself as last entry in download list.
+Clears read-only attributes before overwriting.
+Logs each download to `logs/bootstrap.log` via inline `_AppendLog` helper.
+**Commit hash display:** calls `https://api.github.com/repos/{user}/{repo}/commits/{branch}` before
+downloads; shows short SHA (8 chars) in the status line. Silently skipped on API error.
+
+---
 
 ## Model Download Scripts (`scripts/Download-*-Models.ps1`)
 
-All follow the same pattern (FLUX example, 203 lines):
-1. Import UmeAiRTUtils, detect GPU via `Get-GpuVramInfo`
-2. Show VRAM-based recommendations (thresholds: 30/18/16/14/12/8 GB)
-3. Series of `Read-UserChoice` calls with letter-based menus (A/B/C/D...)
-4. Procedural `Save-File -Uri ... -OutFile ...` calls based on choices
-5. Models hosted on HuggingFace (`huggingface.co/UmeAiRT/...`)
+All follow the same pattern:
+1. Params: `$InstallPath`, `-DownloadAll` (switch), `-v`/`-vv` (verbosity)
+2. `Import-Module UmeAiRTUtils.psm1`; set `$global:Verbosity`
+3. Detect GPU via `Get-GpuVramInfo`, show VRAM-based recommendations
+4. **If `-DownloadAll`**: set all choice variables to their "All" letter and skip prompts.
+   **Else**: series of `Read-UserChoice` calls with letter-based menus (A/B/C/D...)
+5. Procedural `Save-FileCollecting -Uri ... -OutFile ...` calls based on choices
+6. `Show-DownloadSummary` at end; `Read-Host` pause suppressed when `-DownloadAll`
+7. Models hosted on HuggingFace: `https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/models/`
+   HF naming convention: all safetensors use lowercase-hyphen filenames (e.g. `wan2.1-t2v-14b-bf16.safetensors`)
 
 8 model packs: FLUX, WAN2.1, WAN2.2, HIDREAM, LTX1, LTX2, QWEN, Z-IMAGE.
+
+## Model Download Orchestrator (`scripts/Download-Models.ps1`, 85 lines)
+
+Interactive menu launcher. Params: `$InstallPath`, `-DownloadAll`, `-v`/`-vv`.
+- **Normal mode**: while-loop with numbered menu (1-8, Q to quit); calls chosen script with splatted args
+- **-DownloadAll mode**: iterates all 8 scripts in order, passes `-DownloadAll` + verbosity flags to each; no per-script pauses

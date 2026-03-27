@@ -1,17 +1,42 @@
 {
   "repositories": {
     "comfyui": {
-        "url": "https://github.com/comfyanonymous/ComfyUI.git"
+      "url": "https://github.com/comfyanonymous/ComfyUI.git"
     },
     "workflows": {
-        "url": "https://github.com/UmeAiRT/ComfyUI-Workflows"
+      "url": "https://github.com/UmeAiRT/ComfyUI-Workflows"
     }
   },
   "tools": {
     "vs_build_tools": {
       "install_path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools",
       "url": "https://aka.ms/vs/17/release/vs_BuildTools.exe",
-      "arguments": "--wait --quiet --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+      "arguments": "--wait --quiet --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended",
+      "sha256": "93BF06959261A301ACA6406D058ADE08F34AE83CA458FE3ED0689AA2105D9CCC",
+      "authenticode_subject": "Microsoft Corporation"
+    },
+    "aria2": {
+      "url": "https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0-win-64bit-build1.zip",
+      "sha256": "67D015301EEF0B612191212D564C5BB0A14B5B9C4796B76454276A4D28D9B288"
+    },
+    "git": {
+      "url": "https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe",
+      "sha256": "25527923DEBC06515B3016F2D6BCA0820656E8281A23BE2F43BFB658BD5DDA70",
+      "authenticode_subject": "Johannes Schindelin"
+    },
+    "python": {
+      "url": "https://www.python.org/ftp/python/3.13.11/python-3.13.11-amd64.exe",
+      "sha256": "30D4654B3EAC7DDFDF2682DB4C8DCB490F3055F4F33C6906D6B828F680152101",
+      "authenticode_subject": "Python Software Foundation"
+    },
+    "miniconda": {
+      "url": "https://repo.anaconda.com/miniconda/Miniconda3-py313_26.1.1-1-Windows-x86_64.exe",
+      "sha256": "C76F35D66F8A19A3B33786ABB86DACF0BF8D892A55D9DDE38ECCB0DA0820AE99",
+      "authenticode_subject": "Anaconda, Inc."
+    },
+    "uv": {
+      "url": "https://astral.sh/uv/install.ps1",
+      "sha256": "800560DAA61893C1F00BDFDD4484F2D2DB005965BFD7FBEAFA2FAD3A47AA9B9C"
     }
   },
   "pip_packages": {
@@ -27,11 +52,15 @@
     "wheels": [
       {
         "name": "nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-win_amd64",
-        "url": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-win_amd64.whl"
+        "url": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-win_amd64.whl",
+        "sha256": "",
+        "_note_sha256": "TODO: verify hash after URL move from GitHub releases to HF Assets"
       },
       {
         "name": "insightface-0.7.3-cp313-cp313-win_amd64",
-        "url": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/insightface-0.7.3-cp313-cp313-win_amd64.whl"
+        "url": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/insightface-0.7.3-cp313-cp313-win_amd64.whl",
+        "sha256": "",
+        "_note_sha256": "TODO: verify hash after URL move to ComfyUI-Auto-Installer-Assets repo"
       }
     ],
     "standard": [
@@ -42,28 +71,36 @@
       "nvidia-ml-py",
       "cupy-cuda13x",
       "imageio-ffmpeg",
-	  "rotary_embedding_torch",
-	  "blend_modes",
-	  "omegaconf",
-	  "segment_anything",
-	  "gguf",
-	  "deepdiff",
-	  "py-cpuinfo"
+      "rotary_embedding_torch",
+      "blend_modes",
+      "omegaconf",
+      "segment_anything",
+      "gguf",
+      "deepdiff",
+      "py-cpuinfo"
     ],
     "git_repos": []
   },
   "files": {
     "comfy_settings": {
-      "url": "https://github.com/UmeAiRT/ComfyUI-Auto_installer-PS/raw/main/scripts/comfy.settings.json",
+      "url": "https://raw.githubusercontent.com/UmeAiRT/ComfyUI-Auto_installer-PS/main/scripts/comfy.settings.json",
       "destination": "user/default/comfy.settings.json"
     },
     "custom_nodes_csv": {
-        "url": "https://github.com/UmeAiRT/ComfyUI-Auto_installer-PS/raw/main/scripts/custom_nodes.csv",
-        "destination": "scripts/custom_nodes.csv"
+      "url": "https://github.com/UmeAiRT/ComfyUI-Auto_installer-PS/raw/main/scripts/custom_nodes.csv",
+      "destination": "scripts/custom_nodes.csv",
+      "sha256": "AF90B884B014BB913707B5D20B252CD6ED0F956CD1899C64D2C690A29308F078"
     },
     "installer_script": {
-        "url": "https://raw.githubusercontent.com/DazzleML/comfyui-triton-and-sageattention-installer/main/comfyui_triton_sageattention.py",
-        "destination": "scripts/comfyui_triton_sageattention.py"
+      "url": "https://raw.githubusercontent.com/shinseiko/comfyui-triton-and-sageattention-installer/757a375/comfyui_triton_sageattention.py",
+      "branch": "feat/uv-pip-support",
+      "destination": "scripts/comfyui_triton_sageattention.py",
+      "sha256": "9511C720C8CF62279ABEE6186BA18C385F72CCCF4883662812D085EA3352511E"
+    },
+    "nunchaku_versions": {
+      "url": "https://raw.githubusercontent.com/UmeAiRT/ComfyUI-Auto_installer-PS/main/scripts/nunchaku_versions.json",
+      "destination": "ComfyUI/custom_nodes/ComfyUI-nunchaku/nunchaku_versions.json",
+      "sha256": "1743517751F256E4A54BC38C08E64EA185EC3914EE11C7F189C9ED7CBD0813A1"
     }
   }
 }
