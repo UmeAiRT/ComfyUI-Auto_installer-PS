@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$InstallPath  = ((Split-Path $PSScriptRoot -Parent).Replace('\', '/')),
     [switch]$DownloadAll, # Skip all prompts and download everything for every model pack
     [switch]$v,           # -v  : show [INFO] messages
