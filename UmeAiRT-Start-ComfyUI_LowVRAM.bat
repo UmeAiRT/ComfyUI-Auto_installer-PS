@@ -1,65 +1,24 @@
 @echo off
 setlocal
-chcp 65001 > nul
-set "PYTHONPATH="
-set "PYTHONNOUSERSITE=1"
-set "PYTHONUTF8=1"
+chcp 65001 >nul
 
 :: ============================================================================
 :: File: UmeAiRT-Start-ComfyUI_LowVRAM.bat
 :: Description: Launcher for ComfyUI (Low VRAM / Stability Mode).
-::              - Detects installation type (Conda vs venv)
-::              - Activates environment
-::              - Launches main.py with memory optimization flags
+::              Thin wrapper — all logic is in scripts\Start-ComfyUI.ps1.
 :: Author: UmeAiRT
 :: ============================================================================
 
-set "InstallPath=%~dp0"
-if "%InstallPath:~-1%"=="\" set "InstallPath=%InstallPath:~0,-1%"
+set "PYTHONPATH="
+set "PYTHONNOUSERSITE=1"
+set "PYTHONUTF8=1"
 
-:: ----------------------------------------------------------------------------
-:: Section 1: Environment Detection & Activation
-:: ----------------------------------------------------------------------------
-echo [INFO] Checking installation type...
-set "InstallTypeFile=%InstallPath%\scripts\install_type"
-set "InstallType=conda"
+:: Prefer PowerShell 7+ (pwsh) if available, fall back to Windows PowerShell 5.1
+where pwsh >nul 2>&1 && set "PS_EXE=pwsh" || set "PS_EXE=powershell"
+set "INSTALL_DIR=%~dp0"
+set "INSTALL_DIR=%INSTALL_DIR:\=/%"
 
-if exist "%InstallTypeFile%" (
-    set /p InstallType=<"%InstallTypeFile%"
-) else (
-    :: Fallback detection
-    if exist "%InstallPath%\scripts\venv" (
-        set "InstallType=venv"
-    )
-)
-
-if "%InstallType%"=="venv" (
-    echo [INFO] Activating venv environment...
-    call "%InstallPath%\scripts\venv\Scripts\activate.bat"
-    if %errorlevel% neq 0 (
-        echo [ERROR] Failed to activate venv environment.
-        pause
-        exit /b %errorlevel%
-    )
-) else (
-    echo [INFO] Activating Conda environment...
-    :: Assuming standard Miniconda installation
-    call "%LOCALAPPDATA%\Miniconda3\Scripts\activate.bat"
-    call conda activate UmeAiRT
-    if %errorlevel% neq 0 (
-        echo [ERROR] Failed to activate Conda environment 'UmeAiRT'.
-        pause
-        exit /b %errorlevel%
-    )
-)
-
-:: ----------------------------------------------------------------------------
-:: Section 2: Launch ComfyUI
-:: ----------------------------------------------------------------------------
-echo [INFO] Starting ComfyUI (Low VRAM / Stability Mode)...
-cd /d "%InstallPath%\ComfyUI"
-
-:: Launching with memory optimizations for lower VRAM cards
-python main.py --use-sage-attention --listen --auto-launch --disable-smart-memory --lowvram --fp8_e4m3fn-text-enc
+title UmeAiRT ComfyUI (Low VRAM)
+"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -File "%INSTALL_DIR%scripts/Start-ComfyUI.ps1" -InstallPath "%INSTALL_DIR%" -LowVRAM %*
 
 pause

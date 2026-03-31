@@ -27,19 +27,8 @@ jobs:
       - name: Run PSScriptAnalyzer
         shell: pwsh
         run: |
-          $results = Invoke-ScriptAnalyzer -Path ./scripts -Recurse -Settings @{
-            Severity = @('Error', 'Warning')
-            ExcludeRules = @(
-              'PSAvoidUsingWriteHost'        # We use Write-Host intentionally for console UI
-              'PSUseShouldProcessForStateChangingFunctions'
-              'PSAvoidGlobalVars'            # Architectural pattern for logging across module boundaries
-              'PSUseDeclaredVarsMoreThanAssignments'  # False positives on module-scoped variables
-              'PSAvoidUsingEmptyCatchBlock'  # Intentional silent catch in Phase1
-              'PSPossibleIncorrectComparisonWithNull'  # Legacy code style, tracked in TODO.md
-              'PSAvoidOverwritingBuiltInCmdlets'  # Write-Log is our custom logging function
-              'PSAvoidUsingInvokeExpression'  # Known security issue, tracked in TODO.md §1.5
-            )
-          }
+          $results = Invoke-ScriptAnalyzer -Path ./scripts -Recurse `
+            -Settings ./PSScriptAnalyzerSettings.psd1
           if ($results) {
             $results | Format-Table -AutoSize
             Write-Error "PSScriptAnalyzer found $($results.Count) issue(s)."

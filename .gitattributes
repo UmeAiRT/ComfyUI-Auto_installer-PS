@@ -1,0 +1,24 @@
+# Default: normalize to LF in repo
+* text=auto
+
+# Windows-executed and user-edited files: store as-is (CRLF) so GitHub raw URLs serve CRLF.
+# text eol=crlf only converts on git-checkout — it does NOT affect raw GitHub downloads.
+# -text tells git to store the bytes unchanged; working tree files must already be CRLF.
+*.bat           -text
+*.ps1           -text
+*.psm1          -text
+*.psd1          -text
+*.example       -text
+*.json          -text
+*.csv           -text
+*.md            -text
+*.txt           -text
+*.ini           -text
+
+# Binaries — no line ending conversion
+*.exe           binary
+*.zip           binary
+*.whl           binary
+*.png           binary
+*.jpg           binary
+*.gif           binary

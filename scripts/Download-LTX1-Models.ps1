@@ -9,7 +9,10 @@
 #>
 
 param(
-    [string]$InstallPath = $PSScriptRoot
+    [string]$InstallPath = $PSScriptRoot,
+    [switch]$DownloadAll,
+    [switch]$v,
+    [switch]$vv
 )
 
 # ============================================================================
@@ -17,6 +20,7 @@ param(
 # ============================================================================
 $InstallPath = $InstallPath.Trim('"')
 Import-Module (Join-Path $PSScriptRoot "UmeAiRTUtils.psm1") -Force
+$global:Verbosity = if ($vv) { 2 } elseif ($v) { 1 } else { 0 }
 
 # ============================================================================
 # MAIN EXECUTION
@@ -48,8 +52,12 @@ else {
 Write-Log "-------------------------------------------------------------------------------"
 
 # --- User Prompts ---
-$baseChoice = Read-UserChoice -Prompt "Do you want to download LTXV base models?" -Choices @("A) 13B (30Gb)", "B) 2B (7Gb)", "C) All", "D) No") -ValidAnswers @("A", "B", "C", "D")
-$ggufChoice = Read-UserChoice -Prompt "Do you want to download LTXV GGUF models?" -Choices @("A) Q8_0 (24GB Vram)", "B) Q5_K_M (16GB Vram)", "C) Q3_K_S (less than 12GB Vram)", "D) All", "E) No") -ValidAnswers @("A", "B", "C", "D", "E")
+if ($DownloadAll) {
+    $baseChoice = 'C'; $ggufChoice = 'D'
+} else {
+    $baseChoice = Read-UserChoice -Prompt "Do you want to download LTXV base models?" -Choices @("A) 13B (30Gb)", "B) 2B (7Gb)", "C) All", "D) No") -ValidAnswers @("A", "B", "C", "D")
+    $ggufChoice = Read-UserChoice -Prompt "Do you want to download LTXV GGUF models?" -Choices @("A) Q8_0 (24GB Vram)", "B) Q5_K_M (16GB Vram)", "C) Q3_K_S (less than 12GB Vram)", "D) All", "E) No") -ValidAnswers @("A", "B", "C", "D", "E")
+}
 
 # --- Download Process ---
 Write-Log "Starting LTX-Video model downloads..." -Color Cyan
@@ -65,31 +73,32 @@ $doDownload = ($baseChoice -ne 'D' -or $ggufChoice -ne 'E')
 
 if ($doDownload) {
     Write-Log "Downloading LTXV common support file (VAE)..."
-    Save-File -Uri "$baseUrl/vae/ltxv-13b-0.9.7-vae-BF16.safetensors" -OutFile (Join-Path $vaeDir "ltxv-13b-0.9.7-vae-BF16.safetensors")
+    Save-FileCollecting -Uri "$baseUrl/vae/ltxv-13b-0.9.7-vae-BF16.safetensors" -OutFile (Join-Path $vaeDir "ltxv-13b-0.9.7-vae-BF16.safetensors")
 }
 
 if ($baseChoice -ne 'D') {
     Write-Log "Downloading LTXV base model(s)..."
     if ($baseChoice -in 'A', 'C') {
-        Save-File -Uri "$baseUrl/checkpoints/LTXV/ltxv-13b-0.9.7-dev.safetensors" -OutFile (Join-Path $ltxvChkptDir "ltxv-13b-0.9.7-dev.safetensors")
+        Save-FileCollecting -Uri "$baseUrl/checkpoints/LTXV/ltxv-13b-0.9.7-dev.safetensors" -OutFile (Join-Path $ltxvChkptDir "ltxv-13b-0.9.7-dev.safetensors")
     }
     if ($baseChoice -in 'B', 'C') {
-        Save-File -Uri "$baseUrl/checkpoints/LTXV/ltxv-2b-0.9.6-dev-04-25.safetensors" -OutFile (Join-Path $ltxvChkptDir "ltxv-2b-0.9.6-dev-04-25.safetensors")
+        Save-FileCollecting -Uri "$baseUrl/checkpoints/LTXV/ltxv-2b-0.9.6-dev-04-25.safetensors" -OutFile (Join-Path $ltxvChkptDir "ltxv-2b-0.9.6-dev-04-25.safetensors")
     }
 }
 
 if ($ggufChoice -ne 'E') {
     Write-Log "Downloading LTXV GGUF models..."
     if ($ggufChoice -in 'A', 'D') {
-        Save-File -Uri "$baseUrl/diffusion_models/LTXV/LTXV-13B-0.9.8-Dev-Q8_0.gguf" -OutFile (Join-Path $ltxvUnetDir "LTXV-13B-0.9.8-Dev-Q8_0.gguf")
+        Save-FileCollecting -Uri "$baseUrl/diffusion_models/LTXV/LTXV-13B-0.9.8-Dev-Q8_0.gguf" -OutFile (Join-Path $ltxvUnetDir "LTXV-13B-0.9.8-Dev-Q8_0.gguf")
     }
     if ($ggufChoice -in 'B', 'D') {
-        Save-File -Uri "$baseUrl/diffusion_models/LTXV/LTXV-13B-0.9.8-Dev-Q5_K_S.gguf" -OutFile (Join-Path $ltxvUnetDir "LTXV-13B-0.9.8-Dev-Q5_K_S.gguf")
+        Save-FileCollecting -Uri "$baseUrl/diffusion_models/LTXV/LTXV-13B-0.9.8-Dev-Q5_K_S.gguf" -OutFile (Join-Path $ltxvUnetDir "LTXV-13B-0.9.8-Dev-Q5_K_S.gguf")
     }
     if ($ggufChoice -in 'C', 'D') {
-        Save-File -Uri "$baseUrl/diffusion_models/LTXV/LTXV-13B-0.9.8-Dev-Q3_K_S.gguf" -OutFile (Join-Path $ltxvUnetDir "LTXV-13B-0.9.8-Dev-Q3_K_S.gguf")
+        Save-FileCollecting -Uri "$baseUrl/diffusion_models/LTXV/LTXV-13B-0.9.8-Dev-Q3_K_S.gguf" -OutFile (Join-Path $ltxvUnetDir "LTXV-13B-0.9.8-Dev-Q3_K_S.gguf")
     }
 }
 
+Show-DownloadSummary
 Write-Log "LTX-Video model downloads complete." -Color Green
-Read-Host "Press Enter to return to the main installer."
+if (-not $DownloadAll) { Read-Host "Press Enter to return to the main installer." }
